@@ -3,7 +3,7 @@
 #
 # Python library for the SparkFun's line of u-Blox GPS units.
 #
-# SparkFun GPS-RTK2 ZED-F9P: 
+# SparkFun GPS-RTK2 ZED-F9P:
 #   https://www.sparkfun.com/products/15136
 # SparkFun GPS-RTK2 NEO-M8P:
 #   https://www.sparkfun.com/products/15005
@@ -192,6 +192,131 @@ class QwiicGpsUblox(object):
     device_name = _DEFAULT_NAME
     available_addresses = _AVAILABLE_I2C_ADDRESS
 
+    # Library variables
+    i2c_polling_wait = .1 # 100ms delay between checking for data
+    last_checked     = 0  # set to zero
+    command_ack      = False
+    payload_config   = [0 for i in range(MAX_PAYLOAD_SIZE)] 
+    payload_ack      = [0 for i in range(2)] 
+
+    # This is our C++ 'struct'
+    ublox_packet_cfg = { "Class"         : 0,
+                         "ID"            : 0,
+                         "Length"        : 0,
+                         "Counter"       : 0,
+                         "Start"         : 0,
+                         "Payload"       : payload_config,
+                         "Checksum_A"    : 0,
+                         "Checksum_B"    : 0,
+                         "Checksum_Pass" : False }
+
+    ublox_packet_ack = { "Class"         : 0,
+                         "ID"            : 0,
+                         "Length"        : 0,
+                         "Counter"       : 0,
+                         "Start"         : 0,
+                         "Payload"       : payload_ack,
+                         "Checksum_A"    : 0,
+                         "Checksum_B"    : 0,
+                         "Checksum_Pass" : False }
+
+    # u-blox Register List
+    UBX_SYNCH_1    = 0xB5
+    UBX_SYNCH_2    = 0x62
+
+    UBX_CLASS_NAV  = 0x01
+    UBX_CLASS_RXM  = 0x02
+    UBX_CLASS_INF  = 0x04
+    UBX_CLASS_ACK  = 0x05
+    UBX_CLASS_CFG  = 0x06
+    UBX_CLASS_UPD  = 0x09
+    UBX_CLASS_MON  = 0x0A
+    UBX_CLASS_AID  = 0x0B
+    UBX_CLASS_TIM  = 0x0D
+    UBX_CLASS_ESF  = 0x10
+    UBX_CLASS_MGA  = 0x13
+    UBX_CLASS_LOG  = 0x21
+    UBX_CLASS_SEC  = 0x27
+    UBX_CLASS_HNR  = 0x28
+
+    UBX_CFG_PRT    = 0x00    # Used to configure port specifics
+    UBX_CFG_RST    = 0x04    # Used to reset device
+    UBX_CFG_RATE   = 0x08    # Used to set port baud rates
+    UBX_CFG_CFG    = 0x09    # Used to save current configuration
+    UBX_CFG_VALSET = 0x8A    # Used for config of higher version Ublox modules (ie protocol v27 and above)
+    UBX_CFG_VALGET = 0x8B    # Used for config of higher version Ublox modules (ie protocol v27 and above)
+    UBX_CFG_VALDEL = 0x8C    # Used for config of higher version Ublox modules (ie protocol v27 and above)
+
+    UBX_CFG_TMODE3    = 0x71 # Used to enable Survey In Mode
+    SVIN_MODE_DISABLE = 0x00
+    SVIN_MODE_ENABLE  = 0x01
+
+    UBX_NAV_PVT       = 0x07 # All the things! Position, velocity, time, PDOP, height, h/v accuracies, number of satellites
+    UBX_NAV_HPPOSECEF = 0x13 # Find our positional accuracy (high precision)
+    UBX_NAV_HPPOSLLH  = 0x14 # Used for obtaining lat/long/alt in high precision
+    UBX_NAV_SVIN      = 0x3B # Used for checking Survey In status
+    UBX_NAV_RELPOSNED = 0x3C # Relative Positioning Information in NED frame
+
+    UBX_MON_VER   = 0x04     # Used for obtaining Protocol Version
+    UBX_MON_TXBUF = 0x08     # Used for query tx buffer size/state
+
+                             # The following constants are used to enable RTCM messages
+    UBX_CFG_MSG   = 0x01
+    UBX_RTCM_MSB  = 0xF5     # All RTCM enable commands have 0xF5 as MSB
+    UBX_RTCM_1005 = 0x05     # Stationary RTK reference ARP
+    UBX_RTCM_1074 = 0x4A     # GPS MSM4
+    UBX_RTCM_1077 = 0x4D     # GPS MSM7
+    UBX_RTCM_1084 = 0x54     # GLONASS MSM4
+    UBX_RTCM_1087 = 0x57     # GLONASS MSM7
+    UBX_RTCM_1094 = 0x5E     # Galileo MSM4
+    UBX_RTCM_1124 = 0x7C     # BeiDou MSM4
+    UBX_RTCM_1230 = 0xE6     # GLONASS code-phase biases, set to once every 10 seconds
+
+    UBX_ACK_NACK  = 0x00
+    UBX_ACK_ACK   = 0x01
+
+    # The following constants are used to configure the various ports and streams for those ports.
+    # See -CFG-PRT.
+    COM_PORT_I2C   = 0
+    COM_PORT_UART1 = 1
+    COM_PORT_UART2 = 2
+    COM_PORT_USB   = 3
+    COM_PORT_SPI   = 4
+
+    COM_TYPE_UBX   = (1 << 0)
+    COM_TYPE_NMEA  = (1 << 1)
+    COM_TYPE_RTCM3 = (1 << 5)
+
+    # The following constants are used to generate KEY values for the advanced protocol
+    # functions of VELGET/SET/DEL
+    VAL_SIZE_1  = 0x01 # One bit
+    VAL_SIZE_8  = 0x02 # One byte
+    VAL_SIZE_16 = 0x03 # Two bytes
+    VAL_SIZE_32 = 0x04 # Four bytes
+    VAL_SIZE_64 = 0x05 # Eight bytes
+
+    # These are the Bitfield layers definitions for the UBX-CFG-VALSET message
+    # (not to be confused with Bitfield deviceMask in UBX-CFG-CFG).
+    VAL_LAYER_RAM   = (1 << 0)
+    VAL_LAYER_BBR   = (1 << 1)
+    VAL_LAYER_FLASH = (1 << 2)
+
+    # Below are various Groups, IDs, and sizes for various settings
+    # These can be used to call getVal/setVal/delVal.
+    VAL_GROUP_I2COUTPROT      = 0x72
+    VAL_GROUP_I2COUTPROT_SIZE = VAL_SIZE_1 # All fields in I2C group are currently 1 bit
+
+    VAL_ID_I2COUTPROT_UBX   = 0x01
+    VAL_ID_I2COUTPROT_NMEA  = 0x02
+    VAL_ID_I2COUTPROT_RTCM3 = 0x03
+
+    VAL_GROUP_I2C      = 0x51
+    VAL_GROUP_I2C_SIZE = VAL_SIZE_8 # All fields in I2C group are currently 1 byte
+
+    VAL_ID_I2C_ADDRESS = 0x01
+
+    MAX_PAYLOAD_SIZE = 128
+
     _RPiCheck = False
 
     def __init__(self, address=None, i2c_driver=None):
@@ -242,7 +367,7 @@ class QwiicGpsUblox(object):
     # Initialize the system/validate the board.
     def begin(self):
         """
-            Initialize the data transmission lines.  
+            Initialize the data transmission lines.
 
             :return: Returns True on success, False on failure
             :rtype: boolean
@@ -253,19 +378,111 @@ class QwiicGpsUblox(object):
 
     def check_ublox_i2C(self):
         """
-            Checks to see if GPS data is available. 
+            Checks to see if GPS data is available.
             :return: Returns True when GPS data is available, and Flase when
-            not. 
+            not.
             :rtype: boolean
         """
+        # We only want to poll every 100ms as per the datasheet.
+        if (time.perf_counter() - last_checked) >= i2c_polling_wait:
 
-        bytes_avail = self._i2c.readBlock(self.available_addresses, 0xFD, 2)
-        
-        # Check LSB for 0xFF  == No bytes available
-        if (bytes_avail | 0x00FF)  == 0xFF:
-            return False
-        else if bytes_avail ==  0:
-            return False
+            bytes_avail = self._i2c.readBlock(self.available_addresses, 0xFD, 2)
+
+            # Check LSB for 0xFF  == No bytes available
+            if (bytes_avail | 0x00FF)  == 0xFF:
+                last_checked = time.perf_counter()
+                return False
+
+            elif bytes_avail ==  0:
+                last_checked = time.perf_counter()
+                return False
+
+            else:
+                return True
 
         # There's some additional error checking for the RTK version that
-        # should be added here: bit error (extremely rare edge case). 
+        # should be added here: bit error (extremely rare edge case).
+
+        def set_i2c_address(device_address, max_wait):
+            """
+                Changes the software configureable I2C address of the GPS
+                product.
+                :return: Returns True on success and False otherwise
+                :rtype: boolean
+            """
+
+            ublox_packet_cfg['Class']  = UBX_CLASS_CFG
+            ublox_packet_cfg['ID']     = UBX_CFG_PRT
+            ublox_packet_cfg['Length'] = 20
+            ublox_packet_cfg['Start']  = 0
+
+            ublox_packet_cfg['Payload'][4] = device_address << 1;
+
+            if send_command(ublox_packet_cfg, max_wait) == true:
+                self.available_addresses[0] = device_address
+                return True
+
+            return False
+
+        def send_command(outgoing_ubx_packet, max_wait):
+
+            command_ack = False;
+            calc_checksum(outgoing_ubx_packet)
+
+            if not self.send_i2c_command(outgoing_ubx_packet, max_wait):
+                return False
+
+            if max_wait > 0:
+                return self.wait_for_response(outgoing_ubx_packet['Class'],
+                                         outgoing_ubx_packet['ID'],
+                                         max_wait)
+            return True
+
+        def send_i2c_command(outgoing_ubx_packet, max_wait):
+
+            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+                                self.UBX_SYNCH_1)
+            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+                                self.UBX_SYNCH_2)
+            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+                                self.outgoing_ubx_packet['Class'])
+            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+                                self.outgoing_ubx_packet['ID'])
+            self._i2c.writeWord(self.available_addresses[0], 0xFF,
+                                self.outgoing_ubx_packet['Length'])
+            
+            bytes_to_send = outgoing_ubx_packet['Length']
+            
+            # I'm going to ignore any limitations of the buffer for now...
+            for i in range(len(bytes_to_send - 1)): # Stop before last write
+                self._i2c.writeByte(outgoing_ubx_packet['Payload'][i])
+
+            # Now write the last available byte in payload_config
+            self._i2c.writeByte(outgoing_ubx_packet['Payload'][bytes_to_send]) #unsure about this
+            self._i2c.writeByte(outgoing_ubx_packet['Checksum_A']) 
+            self._i2c.writeByte(outgoing_ubx_packet['Checksum_B'])
+
+            return True
+
+        def calc_checksum(ubx_packet):
+
+            ubx_packet['Checksum_A'] = 0
+            ubx_packet['Checksum_B'] = 0
+
+            ubx_packet['Checksum_A'] += ubx_packet['Class']
+            ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
+            
+            ubx_packet['Checksum_A'] += ubx_packet['ID']
+            ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
+        
+            ubx_packet['Checksum_A'] += ubx_packet['Length'] & 0xFF # LSB first
+            ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
+
+            ubx_packet['Checksum_A'] += ubx_packet['Length'] >> 8 # MSB next
+            ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
+
+            for i in range(len(ubx_packet['Length'])):
+                ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
+                ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
+
+
