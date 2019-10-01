@@ -193,90 +193,126 @@ class QwiicGpsUblox(object):
     available_addresses = _AVAILABLE_I2C_ADDRESS
 
     # Library variables
+    auto_pvt = False
+    auto_pvt_implicit_update = False
     i2c_polling_wait = .1 # 100ms delay between checking for data
-    last_checked     = 0  # set to zero
-    command_ack      = False
-    payload_config   = [0 for i in range(MAX_PAYLOAD_SIZE)] 
-    payload_ack      = [0 for i in range(2)] 
+    last_checked = 0  # set to zero
+    command_ack = False
+    payload_config = [0 for i in range(MAX_PAYLOAD_SIZE)]
+    payload_ack = [0 for i in range(2)]
+
+    # The major datums we want to globally store
+    gps_year;
+    gps_month;
+    gps_day;
+    gps_hour;
+    gps_minute;
+    gps_second;
+    gps_millisecond;
+    gps_nanosecond;
+
+    latitude;          # Degrees * 10^-7 (more accurate than floats)
+    longitude;         # Degrees * 10^-7 (more accurate than floats)
+    altitude;          # Number of mm above ellipsoid
+    altitude_MSL;      # Number of mm above Mean Sea Level
+    SIV;               # Number of satellites used in position solution
+    fix_type;          # Tells us when we have a solution aka lock
+    carrier_solution;  # Tells us when we have an RTK float/fixed solution
+    ground_speed;      # mm/s
+    heading_motion; # degrees * 10^-5
+    pDOP;              # Positional dilution of precision
+    version_low;       # Loaded from getProtocolVersion().
+    version_high;
+
+    time_of_week;
+    high_res_latitude;
+    high_res_longitude;
+    elipsoid;
+    mean_sea_level;
+    geo_id_separation;
+    horizontal_accuracy;
+    vertical_accuracy;
+
+    rtcm_frame_counter = 0; # Tracks the type of incoming byte inside RTCM frame
 
     # This is our C++ 'struct'
-    ublox_packet_cfg = { "Class"         : 0,
-                         "ID"            : 0,
-                         "Length"        : 0,
-                         "Counter"       : 0,
-                         "Start"         : 0,
-                         "Payload"       : payload_config,
-                         "Checksum_A"    : 0,
-                         "Checksum_B"    : 0,
-                         "Checksum_Pass" : False }
+    ublox_packet_cfg = {
+        'Class'         : 0,
+        'ID'            : 0,
+        'Length'        : 0,
+        'Counter'       : 0,
+        'Start'         : 0,
+        'Payload'       : payload_config,
+        'Checksum_A'    : 0,
+        'Checksum_B'    : 0,
+        'Checksum_Pass' : False }
 
-    ublox_packet_ack = { "Class"         : 0,
-                         "ID"            : 0,
-                         "Length"        : 0,
-                         "Counter"       : 0,
-                         "Start"         : 0,
-                         "Payload"       : payload_ack,
-                         "Checksum_A"    : 0,
-                         "Checksum_B"    : 0,
-                         "Checksum_Pass" : False }
+    ublox_packet_ack = {
+        'Class'          : 0,
+        'ID'             : 0,
+        'Length'         : 0,
+        'Counter'        : 0,
+        'Start'          : 0,
+        'Payload'        : payload_ack,
+        'Checksum_A'     : 0,
+        'Checksum_B'     : 0,
+        'Checksum_Pass'  : False }
 
-    module_queried = { 'gps_iTOW'         : 1,
-                       'gps_year'         : 1,
-                       'gps_month'        : 1,
-                       'gps_day'          : 1,
-                       'gps_hour'         : 1,
-                       'gps_minute'       : 1,
-                       'gps_second'       : 1,
-                       'gps_nanosecond'   : 1,
+    is_module_queried = {
+        'GPS_iTOW'         : True,
+        'GPS_year'         : True,
+        'GPS_month'        : True,
+        'GPS_day'          : True,
+        'GPS_hour'         : True,
+        'GPS_minute'       : True,
+        'GPS_second'       : True,
+        'GPS_nanosecond'   : True,
+        'All'              : True,
+        'Longitude'        : True,
+        'Latitude'         : True,
+        'Altitude'         : True,
+        'Altitude_MSL'     : True,
+        'SIV'              : True,
+        'fix_type'         : True,
+        'carrier_solution' : True,
+        'ground_speed'     : True,
+        'heading_motion'   : True,
+        'pDOP'             : True,
+        'version_num'      : True  }
 
-                       'all'              : 1,
-                       'longitude'        : 1,
-                       'latitude'         : 1,
-                       'altitude'         : 1,
-                       'altitude_MSL'     : 1,
-                       'SIV'              : 1,
-                       'fix_type'         : 1,
-                       'carrier_solution' : 1,
-                       'ground_speed'     : 1,
-                       'heading_motion'   : 1,
-                       'pDOP'             : 1,
-                       'version_num'      : 1  }
-
-    high_res_module_queried = { 'all'                 : 1,
-                                'time_of_week'        : 1,
-                                'high_res_latitude'   : 1,
-                                'high_res_longitude'  : 1,
-                                'elipsoid'            : 1,
-                                'mean_sea_level'      : 1,
-                                'geo_id_separation'   : 1,
-                                'horizontal_accuracy' : 1,
-                                'vertical_accuracy'   : 1  }
+    is_high_res_module_queried = {
+        'all'                 : True,
+        'time_of_week'        : True,
+        'high_res_latitude'   : True,
+        'high_res_longitude'  : True,
+        'elipsoid'            : True,
+        'mean_sea_level'      : True,
+        'geo_id_separation'   : True,
+        'horizontal_accuracy' : True,
+        'vertical_accuracy'   : True }
 
     # Relative Positioning Info in NED frame specific controls.
-    relative_pos_info = {    'ref_station_ID'  : 0,
-                             'rel_pos_N'        : 0,
-                             'rel_pos_E'        : 0,
-                             'rel_pos_D'        : 0,
-
-                             'rel_pos_length'   : 0,
-                             'rel_pos_heading'  : 0,
-
-                             'rel_pos_HPN'      : 0,
-                             'rel_pos_HPE'      : 0,
-                             'rel_pos_HPD'      : 0,
-                             'rel_pos_HPLength' : 0,
-
-                             'acc_N'            : 0,
-                             'acc_E'            : 0,
-                             'acc_D'            : 0,
-
-                             'gnss_fix_Ok'      : False,
-                             'diff_sol_n'       : False,
-                             'rel_pos_valid'    : False,
-                             'carr_sol_n'       : 0,
-                             'is_moving'        : False,
-                             'ref_pos_miss'     : False,
-                             'ref_obs_miss'     : False  }
+    relative_pos_info = {
+        'ref_station_ID'   : 0,
+        'rel_pos_N'        : 0,
+        'rel_pos_E'        : 0,
+        'rel_pos_D'        : 0,
+        'rel_pos_length'   : 0,
+        'rel_pos_heading'  : 0,
+        'rel_pos_HPN'      : 0,
+        'rel_pos_HPE'      : 0,
+        'rel_pos_HPD'      : 0,
+        'rel_pos_HP_Length': 0,
+        'acc_N'            : 0,
+        'acc_E'            : 0,
+        'acc_D'            : 0,
+        'gnss_fix_ok'      : False,
+        'diff_sol_n'       : False,
+        'rel_pos_valid'    : False,
+        'carr_sol_n'       : 0,
+        'is_moving'        : False,
+        'ref_pos_miss'     : False,
+        'ref_obs_miss'     : False  }
 
     # u-blox Register List
     UBX_SYNCH_1    = 0xB5
@@ -374,6 +410,10 @@ class QwiicGpsUblox(object):
     VAL_ID_I2C_ADDRESS = 0x01
 
     MAX_PAYLOAD_SIZE = 128
+    # Time in ms till timeout
+    MAX_TIME_SHORT = 250
+    MAX_TIME_MED = 500
+    MAX_TIME_LONG = 1000
 
     _RPiCheck = False
 
@@ -442,17 +482,17 @@ class QwiicGpsUblox(object):
             :rtype: boolean
         """
         # We only want to poll every 100ms as per the datasheet.
-        if (time.perf_counter() - last_checked) >= i2c_polling_wait:
+        if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
 
             bytes_avail = self._i2c.readBlock(self.available_addresses, 0xFD, 2)
 
             # Check LSB for 0xFF  == No bytes available
             if (bytes_avail | 0x00FF)  == 0xFF:
-                last_checked = time.perf_counter()
+                self.last_checked = time.perf_counter()
                 return False
 
             elif bytes_avail ==  0:
-                last_checked = time.perf_counter()
+                self.last_checked = time.perf_counter()
                 return False
 
             else:
@@ -469,14 +509,14 @@ class QwiicGpsUblox(object):
                 :rtype: boolean
             """
 
-            ublox_packet_cfg['Class']  = UBX_CLASS_CFG
-            ublox_packet_cfg['ID']     = UBX_CFG_PRT
-            ublox_packet_cfg['Length'] = 20
-            ublox_packet_cfg['Start']  = 0
+            self.ublox_packet_cfg['Class']  = UBX_CLASS_CFG
+            self.ublox_packet_cfg['ID']     = UBX_CFG_PRT
+            self.ublox_packet_cfg['Length'] = 20
+            self.ublox_packet_cfg['Start']  = 0
 
-            ublox_packet_cfg['Payload'][4] = device_address << 1;
+            self.ublox_packet_cfg['Payload'][4] = device_address << 1;
 
-            if send_command(ublox_packet_cfg, max_wait) == true:
+            if send_command(self.ublox_packet_cfg, max_wait) == true:
                 self.available_addresses[0] = device_address
                 return True
 
@@ -484,16 +524,16 @@ class QwiicGpsUblox(object):
 
         def send_command(outgoing_ubx_packet, max_wait):
 
-            command_ack = False;
-            calc_checksum(outgoing_ubx_packet)
+            self.command_ack = False;
+            self.calc_checksum(outgoing_ubx_packet)
 
             if not self.send_i2c_command(outgoing_ubx_packet, max_wait):
                 return False
 
             if max_wait > 0:
                 return self.wait_for_response(outgoing_ubx_packet['Class'],
-                                         outgoing_ubx_packet['ID'],
-                                         max_wait)
+                                              outgoing_ubx_packet['ID'],
+                                              max_wait)
             return True
 
         def send_i2c_command(outgoing_ubx_packet, max_wait):
@@ -508,16 +548,16 @@ class QwiicGpsUblox(object):
                                 self.outgoing_ubx_packet['ID'])
             self._i2c.writeWord(self.available_addresses[0], 0xFF,
                                 self.outgoing_ubx_packet['Length'])
-            
+
             bytes_to_send = outgoing_ubx_packet['Length']
-            
+
             # I'm going to ignore any limitations of the buffer for now...
             for i in range(len(bytes_to_send - 1)): # Stop before last write
                 self._i2c.writeByte(outgoing_ubx_packet['Payload'][i])
 
             # Now write the last available byte in payload_config
             self._i2c.writeByte(outgoing_ubx_packet['Payload'][bytes_to_send]) #unsure about this
-            self._i2c.writeByte(outgoing_ubx_packet['Checksum_A']) 
+            self._i2c.writeByte(outgoing_ubx_packet['Checksum_A'])
             self._i2c.writeByte(outgoing_ubx_packet['Checksum_B'])
 
             return True
@@ -529,10 +569,10 @@ class QwiicGpsUblox(object):
 
             ubx_packet['Checksum_A'] += ubx_packet['Class']
             ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
-            
+
             ubx_packet['Checksum_A'] += ubx_packet['ID']
             ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
-        
+
             ubx_packet['Checksum_A'] += ubx_packet['Length'] & 0xFF # LSB first
             ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
@@ -543,7 +583,190 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
-        
-        def get_latitude():
 
-            if 
+        def get_latitude(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['Latitude'] == False:
+                self.get_pvt();
+            self.is_module_queried['Latitude'] = False
+            self.is_module_queried['All'] = False
+
+            return self.latitude
+
+        def get_longitude(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['Longitude'] == False:
+                self.get_pvt();
+            self.is_module_queried['Longitude'] = False
+            self.is_module_queried['All'] = False
+
+            return self.longitude
+
+        def get_altitude(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['Altitude'] == False:
+                self.get_pvt();
+            self.is_module_queried['Altitude'] = False
+            self.is_module_queried['All'] = False
+
+            return self.altitude
+
+        def get_altitude_MSL(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['Altitude_MSL'] == False:
+                self.get_pvt();
+            self.is_module_queried['Altitude_MSL'] = False
+            self.is_module_queried['All'] = False
+
+            return self.altitude_MSL
+
+        def get_SIV(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['SIV'] == False:
+                self.get_pvt();
+            self.is_module_queried['SIV'] = False
+            self.is_module_queried['All'] = False
+
+            return self.SIV
+
+        def get_fix_type(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['fix_type'] == False:
+                self.get_pvt();
+            self.is_module_queried['fix_type'] = False
+            self.is_module_queried['All'] = False
+
+            return self.fix_type
+
+        def get_carrier_solution_type(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['carrier_solution'] == False:
+                self.get_pvt();
+            self.is_module_queried['carrier_solution'] = False
+            self.is_module_queried['All'] = False
+
+            return self.carrier_solution
+
+        def get_ground_speed(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['ground_speed'] == False:
+                self.get_pvt();
+            self.is_module_queried['ground_speed'] = False
+            self.is_module_queried['All'] = False
+
+            return self.ground_speed
+
+        def get_heading(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['heading_motion'] == False:
+                self.get_pvt();
+            self.is_module_queried['heading_motion'] = False
+            self.is_module_queried['All'] = False
+
+            return self.heading_motion
+
+        def get_PDOP(max_wait = self.MAX_TIME_SHORT):
+
+            if self.is_module_queried['pDOP'] == False:
+                self.get_pvt();
+            self.is_module_queried['pDOP'] = False
+            self.is_module_queried['All'] = False
+
+            return self.pDOP
+
+        def get_protocol_version_high(max_wait = self.MAX_TIME_LONG):
+
+            if self.is_module_queried['version_num'] == False:
+                self.get_pvt();
+            self.is_module_queried['version_num'] = False
+            self.is_module_queried['All'] = False
+
+            return self.version_high
+
+        def get_protocol_version_low(max_wait = self.MAX_TIME_LONG):
+
+            if self.is_module_queried['version_num'] == False:
+                self.get_pvt();
+            self.is_module_queried['version_num'] = False
+            self.is_module_queried['All'] = False
+
+            return self.version_low
+
+        def get_protocol_version(max_wait = self.MAX_TIME_LONG):
+
+            self.ublox_packet_cfg['Class'] = self.UBX_CLASS_MON
+            self.ublox_packet_cfg['ID'] = self.UBX_MON_VER
+
+            extension_number = 10
+
+            for i in range(extension_number):
+
+                self.ublox_packet_cfg['Length'] = 0
+                self.ublox_packet_cfg['Start'] = 40 + (30 * extension_number)
+
+                if self.send_i2c_command(self.ublox_packet_cfg,
+                                         maxWait) == False:
+                    return False
+
+                if (self.ublox_packet_cfg['Payload'][0] == 'P' and
+                    self.ublox_packet_cfg['Payload'][6] == 'R'):
+
+                    self.version_high = (str(self.ublox_packet_cfg['Payload'][8]) +
+                                         str(self.ublox_packet_cfg['Payload'][9]))
+
+                    self.version_low =  (str(self.ublox_packet_cfg['Payload'][11]) +
+                                         str(self.ublox_packet_cfg['Payload'][12]))
+
+                    return self.version_low
+
+            is_module_queried['version_num'] = True
+
+            return True
+
+        def get_PVT(max_wait = self.MAX_TIME_LONG):
+
+            if self.auto_pvt and self.auto_pvt_implicit_update:
+                self.check_ublox_i2C()
+                return self.is_module_queried['All']
+
+            elif self.auto_pvt and not self.auto_pvt_implicit_update:
+                return False
+
+            else:
+                self.ublox_packet_cfg['Class'] = self.UBX_CLASS_NAV
+                self.ublox_packet_cfg['ID'] = self.UBX_NAV_PVT
+                self.ublox_packet_cfg['Length'] = 0
+                return self.send_command(self.ublox_packet_cfg, max_wait)
+
+        def assume_auto_PVT(enabled, implicit_update):
+
+            change = (self.auto_pvt != enabled | 
+                      self.auto_pvt_implicit_update != implicit_update)
+
+            if change: 
+                self.auto_pvt = enabled
+                self.auto_pvt_implicit_update = implicit_update
+
+            return change
+        
+        def set_auto_pvt(enable, implicit_update = None, max_wait = MAX_TIME_SHORT):
+
+            if implicit_update == None:
+                implicit_update = True
+
+            self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
+            self.ublox_packet_cfg['ID'] = self.UBX_CFG_MSG
+            self.ublox_packet_cfg['Length'] = 3
+            self.ublox_packet_cfg['Start'] = 0
+            self.ublox_packet_cfg['Payload'][0] = self.UBX_CLASS_NAV
+            self.ublox_packet_cfg['Payload'][1] = self.UBX_NAV_PVT
+            self.ublox_packet_cfg['Payload'][2] = enable if True else not enable 
+            
+            sent = self.send_command(self.ublox_packet_cfg, max_wait)
+
+            if sent: 
+                self.auto_pvt = enable
+                self.auto_pvt_implicit_update = implicit_update
+            
+            self.is_module_queried['All'] = False
+            return sent
