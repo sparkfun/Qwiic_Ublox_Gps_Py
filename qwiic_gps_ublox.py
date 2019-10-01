@@ -220,6 +220,64 @@ class QwiicGpsUblox(object):
                          "Checksum_B"    : 0,
                          "Checksum_Pass" : False }
 
+    module_queried = { 'gps_iTOW'         : 1,
+                       'gps_year'         : 1,
+                       'gps_month'        : 1,
+                       'gps_day'          : 1,
+                       'gps_hour'         : 1,
+                       'gps_minute'       : 1,
+                       'gps_second'       : 1,
+                       'gps_nanosecond'   : 1,
+
+                       'all'              : 1,
+                       'longitude'        : 1,
+                       'latitude'         : 1,
+                       'altitude'         : 1,
+                       'altitude_MSL'     : 1,
+                       'SIV'              : 1,
+                       'fix_type'         : 1,
+                       'carrier_solution' : 1,
+                       'ground_speed'     : 1,
+                       'heading_motion'   : 1,
+                       'pDOP'             : 1,
+                       'version_num'      : 1  }
+
+    high_res_module_queried = { 'all'                 : 1,
+                                'time_of_week'        : 1,
+                                'high_res_latitude'   : 1,
+                                'high_res_longitude'  : 1,
+                                'elipsoid'            : 1,
+                                'mean_sea_level'      : 1,
+                                'geo_id_separation'   : 1,
+                                'horizontal_accuracy' : 1,
+                                'vertical_accuracy'   : 1  }
+
+	# Relative Positioning Info in NED frame specific controls.
+    relative_pos_info = {    'ref_station_ID'  : 0,
+                             'rel_pos_N'        : 0,
+                             'rel_pos_E'        : 0,
+                             'rel_pos_D'        : 0,
+
+                             'rel_pos_length'   : 0,
+                             'rel_pos_heading'  : 0,
+
+                             'rel_pos_HPN'      : 0,
+                             'rel_pos_HPE'      : 0,
+                             'rel_pos_HPD'      : 0,
+                             'rel_pos_HPLength' : 0,
+
+                             'acc_N'            : 0,
+                             'acc_E'            : 0,
+                             'acc_D'            : 0,
+
+                             'gnss_fix_Ok'      : False,
+                             'diff_sol_n'       : False,
+                             'rel_pos_valid'    : False,
+                             'carr_sol_n'       : 0,
+                             'is_moving'        : False,
+                             'ref_pos_miss'     : False,
+                             'ref_obs_miss'     : False  }
+
     # u-blox Register List
     UBX_SYNCH_1    = 0xB5
     UBX_SYNCH_2    = 0x62
@@ -485,4 +543,7 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
+        
+        def get_latitude():
 
+            if 
