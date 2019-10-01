@@ -252,7 +252,7 @@ class QwiicGpsUblox(object):
                                 'horizontal_accuracy' : 1,
                                 'vertical_accuracy'   : 1  }
 
-	# Relative Positioning Info in NED frame specific controls.
+    # Relative Positioning Info in NED frame specific controls.
     relative_pos_info = {    'ref_station_ID'  : 0,
                              'rel_pos_N'        : 0,
                              'rel_pos_E'        : 0,
