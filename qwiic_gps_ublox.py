@@ -241,6 +241,7 @@ class QwiicGpsUblox(object):
 
     # Dictionaries that hold packets to send to GPS unit
     ublox_packet_cfg = {
+
         'Class'         : 0,
         'ID'            : 0,
         'Length'        : 0,
@@ -251,9 +252,10 @@ class QwiicGpsUblox(object):
         'Checksum_B'    : 0,
         'Checksum_Pass' : False,
         'Valid'         : False
-        }
+    }
 
     ublox_packet_ack = {
+
         'Class'          : 0,
         'ID'             : 0,
         'Length'         : 0,
@@ -264,9 +266,10 @@ class QwiicGpsUblox(object):
         'Checksum_B'     : 0,
         'Checksum_Pass'  : False,
         'Valid'          : False
-        }
+    }
 
     is_module_queried = {
+
         'GPS_iTOW'         : True,
         'GPS_year'         : True,
         'GPS_month'        : True,
@@ -289,6 +292,7 @@ class QwiicGpsUblox(object):
         'version_num'      : True  }
 
     is_high_res_module_queried = {
+
         'All'                 : True,
         'time_of_week'        : True,
         'Latitude'            : True,
@@ -297,10 +301,12 @@ class QwiicGpsUblox(object):
         'mean_sea_level'      : True,
         'geo_id_separation'   : True,
         'horizontal_accuracy' : True,
-        'vertical_accuracy'   : True }
+        'vertical_accuracy'   : True 
+    }
 
     # Relative Positioning Info in NED frame specific controls.
     relative_pos_info = {
+
         'ref_station_ID'   : 0,
         'rel_pos_N'        : 0,
         'rel_pos_E'        : 0,
@@ -321,23 +327,34 @@ class QwiicGpsUblox(object):
         'is_moving'        : False,
         'ref_pos_miss'     : False,
         'ref_obs_miss'     : False
-        }
+    }
 
     # Lists of various settings:
     sentence_type = [
+
         NMEA,
         UBX,
         RTCM,
-        ]
+    ]
 
     current_sentence = None
 
     class_types = [
+        
         CLASS_ACK,
         CLASS_NACK
-        ]
+    ]
 
     ubx_frame_class = None
+
+    comm_types = [
+
+        COMM_TYPE_I2C,
+        COMM_TYPE_SERIAL,
+        COMM_TYPE_SPI
+    ]
+    
+    outgoing_data_channel = None
 
     # u-blox Register List
     UBX_SYNCH_1    = 0xB5
@@ -506,6 +523,18 @@ class QwiicGpsUblox(object):
 
         return self.is_connected()
 
+    def check_ublox():
+        
+        if outgoing_data_channel == None:
+            outgoing_data_channel = COM_PORT_I2C
+        
+        if outgoing_data_channel == COM_PORT_I2C:
+            return self.check_ublox_i2c()
+        elif outgoing_data_channel == COMM_TYPE_SERIAL:
+            pass
+        else:
+            return False
+
     def check_ublox_i2C(self):
         """
             Checks to see if GPS data is available.
@@ -529,6 +558,13 @@ class QwiicGpsUblox(object):
 
             else:
                 return True
+
+            for i in range(bytes_avail):
+                incoming = self._i2c.readByte(self.available_addresses, 0xFF) 
+                self.process(incoming)
+        
+        return True
+                
 
         # There's some additional error checking for the RTK version that
         # should be added here: bit error (extremely rare edge case).
