@@ -63,7 +63,10 @@ setup(
     author='SparkFun Electronics',
     author_email='info@sparkfun.com',
 
-    install_requires=['sparkfun_qwiic_i2c'],
+    install_requires=[
+        'sparkfun_qwiic_i2c',
+        'pynmea2',
+    ],
 
     # Choose your license
     license='MIT',

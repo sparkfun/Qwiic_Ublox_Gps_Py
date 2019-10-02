@@ -73,6 +73,7 @@ import time
 import math
 import sys
 import qwiic_i2c
+import pynmea2
 
 #======================================================================
 # NOTE: For Raspberry Pi
@@ -658,12 +659,170 @@ class QwiicGpsUblox(object):
             elif self.current_sentence == self.NMEA:
                 self.process_NMEA(incoming)
             elif self.current_sentence == self.RTCM:
-                self.process_RTCM(incoming)
+                self.process_RTCM_frame(incoming)
 
         def process_NMEA(incoming):
+            
+            nmea_message = pynmea2.parse(incoming)
+            print(nmea.message) # yeah?
 
-            if _nmea_output_port != None:
-                _nmea_output_port.write(incoming) # Fix this
+        def process_RTCM_frame(incoming):
+
+            if self.rtcm_frame_counter == 1:
+                rtcm_length = (incoming & 0x03) << 8
+            elif self.rtcm_length == 2:
+                rtcm_length |= incoming
+                rtcm_length += 6
+
+            self.rtcm_frame_counter += 1
+
+            self.process_RTCM(incoming)
+
+            if self.rtcm_frame_counter == rtcm_length:
+                current_sentence = None
+
+        def process_RTCM(incoming): #not implemented in Arduino Library
+
+             pass 
+
+        def process_UBX(incoming, incoming_ubx):
+
+            if (incoming_ubx['Counter'] <
+                incoming_ubx['Length'] + 4):
+
+                self.add_to_checksum(incoming) 
+            
+            if incoming_ubx['Counter'] == 0:
+                incoming_ubx['Class'] = incoming
+
+            elif incoming_ubx['Counter'] == 1:
+                incoming_ubx['ID'] = incoming
+
+            elif incoming_ubx['Counter'] == 2:
+                incoming_ubx['Length'] = incoming
+
+            elif incoming_ubx['Counter'] == 3:
+                incoming_ubx['Length'] |= incoming << 8
+
+            elif (incoming_ubx['Counter'] ==
+                  incoming_ubx['Length'] + 4):
+                
+                incoming_ubx['Checksum_A'] = incoming
+
+            elif (incoming_ubx['Counter'] ==
+                  incoming_ubx['Length'] + 5):
+                
+                incoming_ubx['Checksum_B'] = incoming
+                self.current_sentence = None
+
+            if (incoming_ubx['Checksum_A'] == self.rolling_checksum_A and
+                incoming_ubx['Checksum_B'] == self.rolling_checksum_B):
+                
+                incoming_ubx['Valid'] = True
+                self.process_UBX_packet(incoming_ubx)
+            
+            else: 
+                initial_index = incoming_ubx['Start']
+                if (incoming_ubx['Class'] == UBX_CLASS_NAV and
+                    incoming_ubx['ID'] == UBX_NAV_PVT):
+
+                    initial_index = 0
+
+                    if initial_index['Counter'] - 4 >= initial_index:
+                        if ((initial_index['Counter'] - 4) - initial_index <
+                            self.MAX_PAYLOAD_SIZE) :
+                           
+                           initial_index['Payload'][incoming_ubx['Counter'] - 
+                                                    4 - initial_index] = incoming
+
+            incoming_ubx['Counter'] += 1
+
+        def process_UBX_packet(packet_message):
+           
+           packet_class = packet_message['Class']
+
+           if packet_class == self.UBX_CLASS_ACK:
+               if (packet_message['ID'] == self.UBX_ACK_ACK and 
+                   packet_message['Payload'][0] ==
+                   self.ubx_frame_class['Class'] and 
+                   packet_message['Payload'][1] ==
+                   self.ubx_frame_class['ID']):
+
+                   self.command_ack = True
+
+                   return None
+        
+           elif packet_class == self.UBX_CLASS_NAV:
+               if (packet_message['ID'] == self.UBX_NAV_PVT and 
+                   packet_message['Length'] == 92):
+
+                   initial_index = 0
+
+                   self.gps_millisecond = self.extract_long(0) % 1000
+                   self.gps_year = self.extract_int(4)
+                   self.gps_month = self.extract_byte(6)
+                   self.gps_day = self.extract_byte(7)
+                   self.gps_hour = self.extract_byte(8)
+                   self.gps_minute = self.extract_byte(9)
+                   self.gps_second = self.extract_byte(10)
+                   self.gps_nanosecond = self.extract_long(16)
+
+                   self.fix_type = self.extract_byte(20 - initial_index)
+                   self.carrier_solution = self.extract_byte(21 - initial_index) >> 6
+
+                   self.SIV = self.extract_byte(23 - initial_index)
+                   self.longitude = self.extract_long(24 - initial_index)
+                   self.latitude = self.extract_long(28 - initial_index)
+                   self.altitude = self.extract_long(32 - initial_index)
+                   self.altitude_MSL = self.extract_long(36 - initial_index)
+                   self.ground_speed = self.extract_long(60 - initial_index)
+                   self.heading_motion = self.extract_long(64 - initial_index)
+                   self.pDOP = self.extract_long(76 - initial_index)
+
+                   self.is_module_queried['GPS_iTOW'] = True:
+                   self.is_module_queried['GPS_year'] = True:
+                   self.is_module_queried['GPS_month'] = True:
+                   self.is_module_queried['GPS_day'] = True:
+                   self.is_module_queried['GPS_hour'] = True:
+                   self.is_module_queried['GPS_minute'] = True:
+                   self.is_module_queried['GPS_second'] = True:
+                   self.is_module_queried['GPS_nanosecond'] = True:
+
+                   self.is_module_queried['All'] = True:
+                   self.is_module_queried['Longitude'] = True:
+                   self.is_module_queried['Latitude'] = True:
+                   self.is_module_queried['Altitude'] = True:
+                   self.is_module_queried['Altitude_MSL'] = True:
+                   self.is_module_queried['SIV'] = True:
+                   self.is_module_queried['fix_type'] = True:
+                   self.is_module_queried['carrier_solution'] = True:
+                   self.is_module_queried['ground_speed'] = True:
+                   self.is_module_queried['heading_motion'] = True:
+                   self.is_module_queried['pDOP'] = True:
+
+                elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH and
+                      packet_message['Length'] == 36):
+
+                   self.time_of_week = self.extract_Long(4)
+                   self.high_res_longitude = self.extract_long(8)
+                   self.high_res_latitude = self.extract_long(12)
+                   self.elipsoid = self.extract_long(16)
+                   self.mean_sea_level = self.extract_long(20)
+                   self.geo_id_separation = self.extract_long(24)
+                   self.horizontal_accuracy = self.extract_long(28)
+                   self.vertical_accuracy = self.extract_long(32)
+
+                   self.is_high_res_module_queried['All'] = True
+                   self.is_high_res_module_queried['time_of_week'] = True
+                   self.is_high_res_module_queried['high_res_latitude'] = True
+                   self.is_high_res_module_queried['high_res_longitude'] = True
+                   self.is_high_res_module_queried['elipsoid'] = True
+                   self.is_high_res_module_queried['mean_sea_level'] = True
+                   self.is_high_res_module_queried['geo_id_separation'] = True
+                   self.is_high_res_module_queried['horizontal_accuracy'] = True
+                   self.is_high_res_module_queried['vertical_accuracy'] = True
+
+
 
         def extract_long(initial_index):
 
