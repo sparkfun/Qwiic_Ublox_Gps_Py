@@ -199,40 +199,41 @@ class QwiicGpsUblox(object):
     i2c_polling_wait = .1 # 100ms delay between checking for data
     last_checked = 0  # set to zero
     command_ack = False
+    MAX_PAYLOAD_SIZE = 128
     payload_config = [0 for i in range(MAX_PAYLOAD_SIZE)]
     payload_ack = [0 for i in range(2)]
 
     # The major datums we want to globally store
-    gps_year;
-    gps_month;
-    gps_day;
-    gps_hour;
-    gps_minute;
-    gps_second;
-    gps_millisecond;
-    gps_nanosecond;
+    gps_year
+    gps_month
+    gps_day
+    gps_hour
+    gps_minute
+    gps_second
+    gps_millisecond
+    gps_nanosecond
 
-    latitude;          # Degrees * 10^-7 (more accurate than floats)
-    longitude;         # Degrees * 10^-7 (more accurate than floats)
-    altitude;          # Number of mm above ellipsoid
-    altitude_MSL;      # Number of mm above Mean Sea Level
-    SIV;               # Number of satellites used in position solution
-    fix_type;          # Tells us when we have a solution aka lock
-    carrier_solution;  # Tells us when we have an RTK float/fixed solution
-    ground_speed;      # mm/s
-    heading_motion; # degrees * 10^-5
-    pDOP;              # Positional dilution of precision
-    version_low;       # Loaded from getProtocolVersion().
-    version_high;
+    latitude          # Degrees * 10^-7 (more accurate than floats)
+    longitude         # Degrees * 10^-7 (more accurate than floats)
+    altitude          # Number of mm above ellipsoid
+    altitude_MSL      # Number of mm above Mean Sea Level
+    SIV               # Number of satellites used in position solution
+    fix_type          # Tells us when we have a solution aka lock
+    carrier_solution  # Tells us when we have an RTK float/fixed solution
+    ground_speed      # mm/s
+    heading_motion # degrees * 10^-5
+    pDOP              # Positional dilution of precision
+    version_low       # Loaded from getProtocolVersion().
+    version_high
 
-    time_of_week;
-    high_res_latitude;
-    high_res_longitude;
-    elipsoid;
-    mean_sea_level;
-    geo_id_separation;
-    horizontal_accuracy;
-    vertical_accuracy;
+    time_of_week
+    high_res_latitude
+    high_res_longitude
+    elipsoid
+    mean_sea_level
+    geo_id_separation
+    horizontal_accuracy
+    vertical_accuracy
 
     rtcm_frame_counter = 0 # Tracks the type of incoming byte inside RTCM frame
     ubx_frame_counter = 0
@@ -451,7 +452,6 @@ class QwiicGpsUblox(object):
 
     VAL_ID_I2C_ADDRESS = 0x01
 
-    MAX_PAYLOAD_SIZE = 128
     # Time in ms till timeout
     MAX_TIME_SHORT = 250
     MAX_TIME_MED = 500
@@ -815,29 +815,29 @@ class QwiicGpsUblox(object):
                    self.heading_motion = self.extract_long(64 - initial_index)
                    self.pDOP = self.extract_long(76 - initial_index)
 
-                   self.is_module_queried['GPS_iTOW'] = True:
-                   self.is_module_queried['GPS_year'] = True:
-                   self.is_module_queried['GPS_month'] = True:
-                   self.is_module_queried['GPS_day'] = True:
-                   self.is_module_queried['GPS_hour'] = True:
-                   self.is_module_queried['GPS_minute'] = True:
-                   self.is_module_queried['GPS_second'] = True:
-                   self.is_module_queried['GPS_nanosecond'] = True:
+                   self.is_module_queried['GPS_iTOW'] = True
+                   self.is_module_queried['GPS_year'] = True
+                   self.is_module_queried['GPS_month'] = True
+                   self.is_module_queried['GPS_day'] = True
+                   self.is_module_queried['GPS_hour'] = True
+                   self.is_module_queried['GPS_minute'] = True
+                   self.is_module_queried['GPS_second'] = True
+                   self.is_module_queried['GPS_nanosecond'] = True
 
-                   self.is_module_queried['All'] = True:
-                   self.is_module_queried['Longitude'] = True:
-                   self.is_module_queried['Latitude'] = True:
-                   self.is_module_queried['Altitude'] = True:
-                   self.is_module_queried['Altitude_MSL'] = True:
-                   self.is_module_queried['SIV'] = True:
-                   self.is_module_queried['fix_type'] = True:
-                   self.is_module_queried['carrier_solution'] = True:
-                   self.is_module_queried['ground_speed'] = True:
-                   self.is_module_queried['heading_motion'] = True:
-                   self.is_module_queried['pDOP'] = True:
+                   self.is_module_queried['All'] = True
+                   self.is_module_queried['Longitude'] = True
+                   self.is_module_queried['Latitude'] = True
+                   self.is_module_queried['Altitude'] = True
+                   self.is_module_queried['Altitude_MSL'] = True
+                   self.is_module_queried['SIV'] = True
+                   self.is_module_queried['fix_type'] = True
+                   self.is_module_queried['carrier_solution'] = True
+                   self.is_module_queried['ground_speed'] = True
+                   self.is_module_queried['heading_motion'] = True
+                   self.is_module_queried['pDOP'] = True
 
-                elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH and
-                      packet_message['Length'] == 36):
+               elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH
+                      and packet_message['Length'] == 36):
 
                    self.time_of_week = self.extract_Long(4)
                    self.high_res_longitude = self.extract_long(8)
