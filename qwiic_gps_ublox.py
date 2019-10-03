@@ -510,17 +510,17 @@ class QwiicGpsUblox(object):
 
     def check_ublox(self):
         
-        if outgoing_data_channel == None:
-            outgoing_data_channel = COM_PORT_I2C
+        if self.outgoing_data_channel == None:
+            self.outgoing_data_channel = self.COM_PORT_I2C
         
-        if outgoing_data_channel == COM_PORT_I2C:
+        if self.outgoing_data_channel == self.COM_PORT_I2C:
             return self.check_ublox_i2c()
-        elif outgoing_data_channel == COMM_TYPE_SERIAL:
+        elif self.outgoing_data_channel == self.COMM_TYPE_SERIAL:
             pass
         else:
             return False
 
-    def check_ublox_i2C(self):
+    def check_ublox_i2c(self):
         """
             Checks to see if GPS data is available.
             :return: Returns True when GPS data is available, and Flase when
@@ -530,10 +530,10 @@ class QwiicGpsUblox(object):
         # We only want to poll every 100ms as per the datasheet.
         if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
 
-            bytes_avail = self._i2c.readBlock(self.available_addresses, 0xFD, 2)
+            bytes_avail = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
 
             # Check LSB for 0xFF  == No bytes available
-            if (bytes_avail | 0x00FF)  == 0xFF:
+            if (bytes_avail[0] | 0x00FF)  == 0xFF:
                 self.last_checked = time.perf_counter()
                 return False
 
@@ -545,7 +545,7 @@ class QwiicGpsUblox(object):
                 return True
 
             for i in range(bytes_avail):
-                incoming = self._i2c.readByte(self.available_addresses, 0xFF) 
+                incoming = self._i2c.readByte(self.available_addresses[0], 0xFF) 
                 self.process(incoming)
         
         return True
