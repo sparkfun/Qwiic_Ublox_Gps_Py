@@ -508,7 +508,7 @@ class QwiicGpsUblox(object):
 
         return self.is_connected()
 
-    def check_ublox():
+    def check_ublox(self):
         
         if outgoing_data_channel == None:
             outgoing_data_channel = COM_PORT_I2C
@@ -554,7 +554,7 @@ class QwiicGpsUblox(object):
         # There's some additional error checking for the RTK version that
         # should be added here: bit error (extremely rare edge case).
 
-        def set_i2c_address(device_address, max_wait):
+        def set_i2c_address(self, device_address, max_wait):
             """
                 Changes the software configureable I2C address of the GPS
                 product.
@@ -575,7 +575,7 @@ class QwiicGpsUblox(object):
 
             return False
 
-        def send_command(outgoing_ubx_packet, max_wait):
+        def send_command(self, outgoing_ubx_packet, max_wait):
 
             self.command_ack = False;
             self.calc_checksum(outgoing_ubx_packet)
@@ -589,7 +589,7 @@ class QwiicGpsUblox(object):
                                               max_wait)
             return True
 
-        def send_i2c_command(outgoing_ubx_packet, max_wait):
+        def send_i2c_command(self, outgoing_ubx_packet, max_wait):
 
             self._i2c.writeByte(self.available_addresses[0], 0xFF,
                                 self.UBX_SYNCH_1)
@@ -615,7 +615,7 @@ class QwiicGpsUblox(object):
 
             return True
 
-        def calc_checksum(ubx_packet):
+        def calc_checksum(self, ubx_packet):
 
             ubx_packet['Checksum_A'] = 0
             ubx_packet['Checksum_B'] = 0
@@ -636,7 +636,7 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
-        def process(incoming):
+        def process(self, incoming):
 
             if self.current_sentence == None or self.current_sentence == self.NMEA:
 
@@ -682,12 +682,12 @@ class QwiicGpsUblox(object):
             elif self.current_sentence == self.RTCM:
                 self.process_RTCM_frame(incoming)
 
-        def process_NMEA(incoming):
+        def process_NMEA(self, incoming):
             
             nmea_message = pynmea2.parse(incoming)
             print(nmea.message) # yeah?
 
-        def process_RTCM_frame(incoming):
+        def process_RTCM_frame(self, incoming):
 
             if self.rtcm_frame_counter == 1:
                 rtcm_length = (incoming & 0x03) << 8
@@ -702,11 +702,11 @@ class QwiicGpsUblox(object):
             if self.rtcm_frame_counter == rtcm_length:
                 current_sentence = None
 
-        def process_RTCM(incoming): #not implemented in Arduino Library
+        def process_RTCM(self, incoming): #not implemented in Arduino Library
 
              pass 
 
-        def process_UBX(incoming, incoming_ubx):
+        def process_UBX(self, incoming, incoming_ubx):
 
             if (incoming_ubx['Counter'] <
                 incoming_ubx['Length'] + 4):
@@ -758,7 +758,7 @@ class QwiicGpsUblox(object):
 
             incoming_ubx['Counter'] += 1
 
-        def process_UBX_packet(packet_message):
+        def process_UBX_packet(self, packet_message):
            
            packet_class = packet_message['Class']
 
@@ -845,7 +845,7 @@ class QwiicGpsUblox(object):
 
 
 
-        def extract_long(initial_index):
+        def extract_long(self, initial_index):
 
             # LSB to MSB
             val = 0
@@ -855,18 +855,18 @@ class QwiicGpsUblox(object):
             val |= ublox_packet_cfg['Payload'][initial_index + 3] << 24
             return val
 
-        def extract_int(initial_index):
+        def extract_int(self, initial_index):
 
             val = 0
             val |= ublox_packet_cfg['Payload'][initial_index]
             val |= ublox_packet_cfg['Payload'][initial_index + 1] << 8
             return val
 
-        def extract_byte(initial_index):
+        def extract_byte(self, initial_index):
 
             return(ublox_packet_cfg['Payload'][initial_index])
 
-        def get_latitude(max_wait = self.MAX_TIME_SHORT):
+        def get_latitude(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['Latitude'] == False:
                 self.get_pvt();
@@ -875,7 +875,7 @@ class QwiicGpsUblox(object):
 
             return self.latitude
 
-        def get_longitude(max_wait = self.MAX_TIME_SHORT):
+        def get_longitude(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['Longitude'] == False:
                 self.get_pvt();
@@ -884,7 +884,7 @@ class QwiicGpsUblox(object):
 
             return self.longitude
 
-        def get_altitude(max_wait = self.MAX_TIME_SHORT):
+        def get_altitude(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['Altitude'] == False:
                 self.get_pvt();
@@ -893,7 +893,7 @@ class QwiicGpsUblox(object):
 
             return self.altitude
 
-        def get_year(max_wait = self.MAX_TIME_SHORT):
+        def get_year(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_year'] == False:
                 self.get_pvt();
@@ -902,7 +902,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_year
 
-        def get_month(max_wait = self.MAX_TIME_SHORT):
+        def get_month(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_month'] == False:
                 self.get_pvt();
@@ -911,7 +911,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_month
 
-        def get_day(max_wait = self.MAX_TIME_SHORT):
+        def get_day(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_day'] == False:
                 self.get_pvt();
@@ -920,7 +920,7 @@ class QwiicGpsUblox(object):
 
             return self.get_day
 
-        def get_hour(max_wait = self.MAX_TIME_SHORT):
+        def get_hour(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_hour'] == False:
                 self.get_pvt();
@@ -929,7 +929,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_hour
 
-        def get_second(max_wait = self.MAX_TIME_SHORT):
+        def get_second(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_second'] == False:
                 self.get_pvt();
@@ -938,7 +938,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_second
 
-        def get_millisecond(max_wait = self.MAX_TIME_SHORT):
+        def get_millisecond(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_iTOW'] == False:
                 self.get_pvt();
@@ -947,7 +947,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_millisecond
 
-        def get_nanosecond(max_wait = self.MAX_TIME_SHORT):
+        def get_nanosecond(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['GPS_nanosecond'] == False:
                 self.get_pvt();
@@ -956,7 +956,7 @@ class QwiicGpsUblox(object):
 
             return self.gps_nanosecond
 
-        def get_time_of_week(max_wait = self.MAX_TIME_SHORT):
+        def get_time_of_week(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['time_of_week'] == False:
                 self.get_hppos_llh();
@@ -965,7 +965,7 @@ class QwiicGpsUblox(object):
 
             return self.time_of_week
 
-        def get_high_res_latitude(max_wait = self.MAX_TIME_SHORT):
+        def get_high_res_latitude(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['Latitude'] == False:
                 self.get_hppos_llh();
@@ -974,7 +974,7 @@ class QwiicGpsUblox(object):
 
             return self.high_res_latitude
 
-        def get_high_res_longitude(max_wait = self.MAX_TIME_SHORT):
+        def get_high_res_longitude(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['Longitude'] == False:
                 self.get_hppos_llh();
@@ -983,7 +983,7 @@ class QwiicGpsUblox(object):
 
             return self.high_res_longitude
 
-        def get_mean_sea_level(max_wait = self.MAX_TIME_SHORT):
+        def get_mean_sea_level(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['mean_sea_level'] == False:
                 self.get_hppos_llh();
@@ -992,7 +992,7 @@ class QwiicGpsUblox(object):
 
             return self.mean_sea_level
 
-        def get_geo_id_separation(max_wait = self.MAX_TIME_SHORT):
+        def get_geo_id_separation(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['geo_id_separation'] == False:
                 self.get_hppos_llh();
@@ -1002,7 +1002,7 @@ class QwiicGpsUblox(object):
             return self.geo_id_separation
 
 
-        def get_horizontal_accuracy(max_wait = self.MAX_TIME_SHORT):
+        def get_horizontal_accuracy(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['horizontal_accuracy'] == False:
                 self.get_hppos_llh();
@@ -1011,7 +1011,7 @@ class QwiicGpsUblox(object):
 
             return self.horizontal_accuracy
 
-        def get_vertical_accuracy(max_wait = self.MAX_TIME_SHORT):
+        def get_vertical_accuracy(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_high_res_module_queried['vertical_accuracy'] == False:
                 self.get_hppos_llh();
@@ -1020,7 +1020,7 @@ class QwiicGpsUblox(object):
 
             return self.vertical_accuracy
 
-        def get_hppos_llh(max_wait = MAX_TIME_LONG):
+        def get_hppos_llh(self, max_wait = MAX_TIME_LONG):
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_NAV
             self.ublox_packet_cfg['ID'] = self.UBX_NAV_HPPOSLLH
@@ -1028,7 +1028,7 @@ class QwiicGpsUblox(object):
 
             return self.send_command(self.ublox_packet_cfg, max_wait)
 
-        def get_position_accuracy(max_wait = MAX_TIME_MED):
+        def get_position_accuracy(self, max_wait = MAX_TIME_MED):
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_NAV
             self.ublox_packet_cfg['ID'] = self.UBX_NAV_HPPOSECEF
@@ -1047,7 +1047,7 @@ class QwiicGpsUblox(object):
 
             return temp_accuracy
 
-        def get_altitude_MSL(max_wait = self.MAX_TIME_SHORT):
+        def get_altitude_MSL(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['Altitude_MSL'] == False:
                 self.get_pvt();
@@ -1056,7 +1056,7 @@ class QwiicGpsUblox(object):
 
             return self.altitude_MSL
 
-        def get_SIV(max_wait = self.MAX_TIME_SHORT):
+        def get_SIV(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['SIV'] == False:
                 self.get_pvt();
@@ -1065,7 +1065,7 @@ class QwiicGpsUblox(object):
 
             return self.SIV
 
-        def get_fix_type(max_wait = self.MAX_TIME_SHORT):
+        def get_fix_type(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['fix_type'] == False:
                 self.get_pvt();
@@ -1074,7 +1074,7 @@ class QwiicGpsUblox(object):
 
             return self.fix_type
 
-        def get_carrier_solution_type(max_wait = self.MAX_TIME_SHORT):
+        def get_carrier_solution_type(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['carrier_solution'] == False:
                 self.get_pvt();
@@ -1083,7 +1083,7 @@ class QwiicGpsUblox(object):
 
             return self.carrier_solution
 
-        def get_ground_speed(max_wait = self.MAX_TIME_SHORT):
+        def get_ground_speed(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['ground_speed'] == False:
                 self.get_pvt();
@@ -1092,7 +1092,7 @@ class QwiicGpsUblox(object):
 
             return self.ground_speed
 
-        def get_heading(max_wait = self.MAX_TIME_SHORT):
+        def get_heading(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['heading_motion'] == False:
                 self.get_pvt();
@@ -1101,7 +1101,7 @@ class QwiicGpsUblox(object):
 
             return self.heading_motion
 
-        def get_PDOP(max_wait = self.MAX_TIME_SHORT):
+        def get_PDOP(self, max_wait = self.MAX_TIME_SHORT):
 
             if self.is_module_queried['pDOP'] == False:
                 self.get_pvt();
@@ -1110,7 +1110,7 @@ class QwiicGpsUblox(object):
 
             return self.pDOP
 
-        def get_protocol_version_high(max_wait = self.MAX_TIME_LONG):
+        def get_protocol_version_high(self, max_wait = self.MAX_TIME_LONG):
 
             if self.is_module_queried['version_num'] == False:
                 self.get_pvt();
@@ -1119,7 +1119,7 @@ class QwiicGpsUblox(object):
 
             return self.version_high
 
-        def get_protocol_version_low(max_wait = self.MAX_TIME_LONG):
+        def get_protocol_version_low(self, max_wait = self.MAX_TIME_LONG):
 
             if self.is_module_queried['version_num'] == False:
                 self.get_pvt();
@@ -1128,7 +1128,7 @@ class QwiicGpsUblox(object):
 
             return self.version_low
 
-        def get_protocol_version(max_wait = self.MAX_TIME_LONG):
+        def get_protocol_version(self, max_wait = self.MAX_TIME_LONG):
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_MON
             self.ublox_packet_cfg['ID'] = self.UBX_MON_VER
@@ -1159,7 +1159,7 @@ class QwiicGpsUblox(object):
 
             return True
 
-        def get_PVT(max_wait = self.MAX_TIME_LONG):
+        def get_PVT(self, max_wait = self.MAX_TIME_LONG):
 
             if self.auto_pvt and self.auto_pvt_implicit_update:
                 self.check_ublox_i2C()
@@ -1174,7 +1174,7 @@ class QwiicGpsUblox(object):
                 self.ublox_packet_cfg['Length'] = 0
                 return self.send_command(self.ublox_packet_cfg, max_wait)
 
-        def assume_auto_PVT(enabled, implicit_update):
+        def assume_auto_PVT(self, enabled, implicit_update):
 
             change = (self.auto_pvt != enabled |
                       self.auto_pvt_implicit_update != implicit_update)
@@ -1185,7 +1185,7 @@ class QwiicGpsUblox(object):
 
             return change
 
-        def set_auto_pvt(enable, implicit_update = None, max_wait = MAX_TIME_SHORT):
+        def set_auto_pvt(self, enable, implicit_update = None, max_wait = MAX_TIME_SHORT):
 
             if implicit_update == None:
                 implicit_update = True
@@ -1207,7 +1207,7 @@ class QwiicGpsUblox(object):
             self.is_module_queried['All'] = False
             return sent
 
-        def hard_rest():
+        def hard_rest(self):
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
             self.ublox_packet_cfg['ID'] = self.UBX_CFG_RST
@@ -1220,7 +1220,7 @@ class QwiicGpsUblox(object):
 
             self.send_command(self.ublox_packet_cfg, 0)
 
-        def factory_reset():
+        def factory_reset(self):
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
             self.ublox_packet_cfg['ID'] = self.UBX_CFG_CFG
