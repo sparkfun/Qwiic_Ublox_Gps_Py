@@ -204,36 +204,36 @@ class QwiicGpsUblox(object):
     payload_ack = [0 for i in range(2)]
 
     # The major datums we want to globally store
-    gps_year
-    gps_month
-    gps_day
-    gps_hour
-    gps_minute
-    gps_second
-    gps_millisecond
-    gps_nanosecond
+    gps_year = 0
+    gps_month = 0
+    gps_day = 0
+    gps_hour = 0
+    gps_minute = 0
+    gps_second = 0
+    gps_millisecond = 0
+    gps_nanosecond = 0
 
-    latitude          # Degrees * 10^-7 (more accurate than floats)
-    longitude         # Degrees * 10^-7 (more accurate than floats)
-    altitude          # Number of mm above ellipsoid
-    altitude_MSL      # Number of mm above Mean Sea Level
-    SIV               # Number of satellites used in position solution
-    fix_type          # Tells us when we have a solution aka lock
-    carrier_solution  # Tells us when we have an RTK float/fixed solution
-    ground_speed      # mm/s
-    heading_motion # degrees * 10^-5
-    pDOP              # Positional dilution of precision
-    version_low       # Loaded from getProtocolVersion().
-    version_high
+    latitude = 0          # Degrees * 10^-7 (more accurate than floats)
+    longitude = 0         # Degrees * 10^-7 (more accurate than floats)
+    altitude = 0          # Number of mm above ellipsoid
+    altitude_MSL = 0      # Number of mm above Mean Sea Level
+    SIV = 0               # Number of satellites used in position solution
+    fix_type = 0          # Tells us when we have a solution aka lock
+    carrier_solution = 0  # Tells us when we have an RTK float/fixed solution
+    ground_speed = 0      # mm/s
+    heading_motion = 0 # degrees * 10^-5
+    pDOP = 0              # Positional dilution of precision
+    version_low = 0       # Loaded from getProtocolVersion().
+    version_high = 0
 
-    time_of_week
-    high_res_latitude
-    high_res_longitude
-    elipsoid
-    mean_sea_level
-    geo_id_separation
-    horizontal_accuracy
-    vertical_accuracy
+    time_of_week = 0
+    high_res_latitude = 0
+    high_res_longitude = 0
+    elipsoid = 0
+    mean_sea_level = 0
+    geo_id_separation = 0
+    horizontal_accuracy = 0
+    vertical_accuracy = 0
 
     rtcm_frame_counter = 0 # Tracks the type of incoming byte inside RTCM frame
     ubx_frame_counter = 0
@@ -331,31 +331,6 @@ class QwiicGpsUblox(object):
     }
 
     # Lists of various settings:
-    sentence_type = [
-
-        NMEA,
-        UBX,
-        RTCM,
-    ]
-
-    current_sentence = None
-
-    class_types = [
-        
-        CLASS_ACK,
-        CLASS_NACK
-    ]
-
-    ubx_frame_class = None
-
-    comm_types = [
-
-        COMM_TYPE_I2C,
-        COMM_TYPE_SERIAL,
-        COMM_TYPE_SPI
-    ]
-    
-    outgoing_data_channel = None
 
     # u-blox Register List
     UBX_SYNCH_1    = 0xB5
@@ -457,12 +432,22 @@ class QwiicGpsUblox(object):
     MAX_TIME_MED = 500
     MAX_TIME_LONG = 1000
 
+    # Sentence Types 
     NMEA = 1
     UBX = 2
     RTCM = 3
+    current_sentence = None
 
+    # Class Types
     CLASS_ACK = 1
     CLASS_NACK = 2
+    ubx_frame_class = None
+
+    # Data commuincation options/types
+    COMM_TYPE_I2C = 1
+    COMM_TYPE_SERIAL = 2
+    COMM_TYPE_SPI = 3
+    outgoing_data_channel = None
 
     _RPiCheck = False
 
@@ -474,9 +459,9 @@ class QwiicGpsUblox(object):
         #
         # Lets check if it's enabled. This is done only once in
         # the session
-        if not QwiicCcs811._RPiCheck:
+        if not QwiicGpsUblox._RPiCheck:
             _checkForRPiI2CClockStretch()
-            QwiicCcs811._RPiCheck = True
+            QwiicGpsUblox._RPiCheck = True
 
         # Did the user specify an I2C address?
 

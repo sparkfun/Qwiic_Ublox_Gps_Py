@@ -37,7 +37,7 @@
 #
 
 from __future__ import print_function
-import qwiic_gps_ublox.py
+import qwiic_gps_ublox
 import time
 import sys
 
