@@ -538,7 +538,7 @@ class QwiicGpsUblox(object):
             print(bytes_avail)
 
             # Check LSB for 0xFF  == No bytes available
-            if (bytes_avail[0] | 0x00FF)  == 0xFF:
+            if (bytes_avail | 0x00FF)  == 0xFF:
                 print("It's this....")
                 self.last_checked = time.perf_counter()
                 return False
@@ -641,28 +641,28 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
-        def process(self, incoming):
+        def process(self, incoming_data):
 
             if self.current_sentence == None or self.current_sentence == self.NMEA:
 
-                if incoming == 0xB5:
+                if incoming_data == 0xB5:
                     self.ubx_frame_counter = 0
                     self.rolling_checksum_A = 0
                     self.rolling_checksum_B = 0
                     self.current_sentence = self.UBX
 
-                elif incoming == '$':
+                elif incoming_data == '$':
                     self.current_sentence = self.NMEA
 
-                elif incoming == 0xD3:
+                elif incoming_data == 0xD3:
                     self.rtcm_frame_counter = 0
                     self.current_sentence = self.RTCM
 
             if self.current_sentence == self.UBX:
 
-                if self.ubx_frame_counter == 0 and incoming != 0xB5:
+                if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
                     self.current_sentence = None
-                elif self.ubx_frame_counter == 1 and incoming != 0x62:
+                elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
                     self.current_sentence = None
                 elif self.ubx_frame_counter == 2:
                     self.ublox_packet_ack['Counter'] = 0
@@ -670,7 +670,7 @@ class QwiicGpsUblox(object):
                     self.ublox_packet_cfg['Counter'] = 0
                     self.ublox_packet_cfg['Validate'] = False
 
-                    if incoming == self.UBX_CLASS_ACK:
+                    if incoming_data == self.UBX_CLASS_ACK:
                         self.ubx_frame_class = self.CLASS_ACK
                     else:
                         self.ubx_frame_class = self.CLASS_NACK
@@ -678,36 +678,36 @@ class QwiicGpsUblox(object):
                 self.ubx_frame_counter += 1
 
                 if self.ubx_frame_class == self.CLASS_ACK:
-                    self.process_UBX(incoming, self.ublox_packet_ack)
+                    self.process_UBX(incoming_data, self.ublox_packet_ack)
                 elif self.ubx_frame_class == self.CLASS_NACK:
-                    self.process_UBX(incoming, self.ublox_packet_cfg)
+                    self.process_UBX(incoming_data, self.ublox_packet_cfg)
 
             elif self.current_sentence == self.NMEA:
-                self.process_NMEA(incoming)
+                self.process_NMEA(incoming_data)
             elif self.current_sentence == self.RTCM:
-                self.process_RTCM_frame(incoming)
+                self.process_RTCM_frame(incoming_data)
 
-        def process_NMEA(self, incoming):
+        def process_NMEA(self, incoming_data):
             
-            nmea_message = pynmea2.parse(incoming)
+            nmea_message = pynmea2.parse(incoming_data)
             print(nmea.message) # yeah?
 
-        def process_RTCM_frame(self, incoming):
+        def process_RTCM_frame(self, incoming_data):
 
             if self.rtcm_frame_counter == 1:
-                rtcm_length = (incoming & 0x03) << 8
+                rtcm_length = (incoming_data & 0x03) << 8
             elif self.rtcm_length == 2:
-                rtcm_length |= incoming
+                rtcm_length |= incoming_data
                 rtcm_length += 6
 
             self.rtcm_frame_counter += 1
 
-            self.process_RTCM(incoming)
+            self.process_RTCM(incoming_data)
 
             if self.rtcm_frame_counter == rtcm_length:
                 current_sentence = None
 
-        def process_RTCM(self, incoming): #not implemented in Arduino Library
+        def process_RTCM(self, incoming_data): #not implemented in Arduino Library
 
              pass 
 
