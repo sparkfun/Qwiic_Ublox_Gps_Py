@@ -239,6 +239,7 @@ class QwiicGpsUblox(object):
     ubx_frame_counter = 0
     rolling_checksum_A = 0
     rolling_checksum_B = 0
+    rtcm_length = 0
 
     # Dictionaries that hold packets to send to GPS unit
     ublox_packet_cfg = {
@@ -432,6 +433,8 @@ class QwiicGpsUblox(object):
     MAX_TIME_MED = 500
     MAX_TIME_LONG = 1000
 
+    I2C_BUFFER_LENGTH = 32
+
     # Sentence Types 
     NMEA = 1
     UBX = 2
@@ -508,6 +511,85 @@ class QwiicGpsUblox(object):
 
         return self.is_connected()
 
+    def process_RTCM(self, incoming_data): #not implemented in Arduino Library
+
+         pass 
+
+    def process_RTCM_frame(self, incoming_data):
+
+        if self.rtcm_frame_counter == 1:
+            self.rtcm_length = (incoming_data & 0x03) << 8
+        elif self.rtcm_length == 2:
+            self.rtcm_length |= incoming_data
+            self.rtcm_length += 6
+
+        self.rtcm_frame_counter += 1
+
+        self.process_RTCM(incoming_data)
+
+        if self.rtcm_frame_counter == self.rtcm_length:
+            current_sentence = None
+
+
+    def process(self, incoming_data):
+
+        if self.current_sentence == None or self.current_sentence == self.NMEA:
+            print("Incoming Data", hex(incoming_data))
+
+            if incoming_data == 0xB5:
+                print(hex(incoming_data))
+                self.ubx_frame_counter = 0
+                self.rolling_checksum_A = 0
+                self.rolling_checksum_B = 0
+                self.current_sentence = self.UBX
+
+            elif incoming_data == '$':
+                print(incoming_data)
+                self.current_sentence = self.NMEA
+
+            elif incoming_data == 0xD3:
+                print(hex(incoming_data))
+                self.rtcm_frame_counter = 0
+                self.current_sentence = self.RTCM
+
+        print ("Current Sentence: ", self.current_sentence)
+        if self.current_sentence == 3:
+            print("RTCM")
+        if self.current_sentence == self.UBX:
+            print("Frame Counter: ", sel.ubx_frame_counter)
+            if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
+                self.current_sentence = None
+            elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
+                self.current_sentence = None
+            elif self.ubx_frame_counter == 2:
+                self.ublox_packet_ack['Counter'] = 0
+                self.ublox_packet_ack['Validate'] = False
+                self.ublox_packet_cfg['Counter'] = 0
+                self.ublox_packet_cfg['Validate'] = False
+
+                if incoming_data == self.UBX_CLASS_ACK:
+                    self.ubx_frame_class = self.CLASS_ACK
+                else:
+                    self.ubx_frame_class = self.CLASS_NACK
+
+            self.ubx_frame_counter += 1
+
+            if self.ubx_frame_class == self.CLASS_ACK:
+                self.process_UBX(incoming_data, self.ublox_packet_ack)
+            elif self.ubx_frame_class == self.CLASS_NACK:
+                self.process_UBX(incoming_data, self.ublox_packet_cfg)
+
+        elif self.current_sentence == self.NMEA:
+            self.process_NMEA(incoming_data)
+        elif self.current_sentence == self.RTCM:
+            self.process_RTCM_frame(incoming_data)
+
+    def process_NMEA(self, incoming_data):
+        
+        nmea_message = pynmea2.parse(incoming_data)
+        print(nmea.message) # yeah?
+
+
     def check_ublox(self):
         
         if self.outgoing_data_channel == None:
@@ -529,17 +611,14 @@ class QwiicGpsUblox(object):
             :rtype: boolean
         """
         # We only want to poll every 100ms as per the datasheet.
-        print("Entering loop here hopefully")
         if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
 
-            print("Loop entered")
             byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
             bytes_avail = byte_block[1] << 8 | byte_block[0]
             print(bytes_avail)
 
             # Check LSB for 0xFF  == No bytes available
             if (bytes_avail | 0x00FF)  == 0xFF:
-                print("It's this....")
                 self.last_checked = time.perf_counter()
                 return False
 
@@ -548,11 +627,17 @@ class QwiicGpsUblox(object):
                 return False
 
             else:
-                print("looking through bytes.")
                 for i in range(bytes_avail):
+
+                    bytes_to_read = bytes_avail
+
+                    if bytes_to_read > self.I2C_BUFFER_LENGTH:
+                        bytes_to_read = self.I2C_BUFFER_LENGTH
+
                     incoming = self._i2c.readByte(self.available_addresses[0], 0xFF) 
                     self.process(incoming)
-        
+                    time.sleep(.02)
+
         return True
                 
 
@@ -641,56 +726,6 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_A'] += ubx_packet['Payload'][i]
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
-        def process(self, incoming_data):
-
-            if self.current_sentence == None or self.current_sentence == self.NMEA:
-
-                if incoming_data == 0xB5:
-                    self.ubx_frame_counter = 0
-                    self.rolling_checksum_A = 0
-                    self.rolling_checksum_B = 0
-                    self.current_sentence = self.UBX
-
-                elif incoming_data == '$':
-                    self.current_sentence = self.NMEA
-
-                elif incoming_data == 0xD3:
-                    self.rtcm_frame_counter = 0
-                    self.current_sentence = self.RTCM
-
-            if self.current_sentence == self.UBX:
-
-                if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
-                    self.current_sentence = None
-                elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
-                    self.current_sentence = None
-                elif self.ubx_frame_counter == 2:
-                    self.ublox_packet_ack['Counter'] = 0
-                    self.ublox_packet_ack['Validate'] = False
-                    self.ublox_packet_cfg['Counter'] = 0
-                    self.ublox_packet_cfg['Validate'] = False
-
-                    if incoming_data == self.UBX_CLASS_ACK:
-                        self.ubx_frame_class = self.CLASS_ACK
-                    else:
-                        self.ubx_frame_class = self.CLASS_NACK
-
-                self.ubx_frame_counter += 1
-
-                if self.ubx_frame_class == self.CLASS_ACK:
-                    self.process_UBX(incoming_data, self.ublox_packet_ack)
-                elif self.ubx_frame_class == self.CLASS_NACK:
-                    self.process_UBX(incoming_data, self.ublox_packet_cfg)
-
-            elif self.current_sentence == self.NMEA:
-                self.process_NMEA(incoming_data)
-            elif self.current_sentence == self.RTCM:
-                self.process_RTCM_frame(incoming_data)
-
-        def process_NMEA(self, incoming_data):
-            
-            nmea_message = pynmea2.parse(incoming_data)
-            print(nmea.message) # yeah?
 
         def process_RTCM_frame(self, incoming_data):
 
@@ -707,9 +742,6 @@ class QwiicGpsUblox(object):
             if self.rtcm_frame_counter == rtcm_length:
                 current_sentence = None
 
-        def process_RTCM(self, incoming_data): #not implemented in Arduino Library
-
-             pass 
 
         def process_UBX(self, incoming, incoming_ubx):
 
