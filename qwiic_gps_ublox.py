@@ -534,29 +534,25 @@ class QwiicGpsUblox(object):
     def process(self, incoming_data):
 
         if self.current_sentence == None or self.current_sentence == self.NMEA:
-            print("Incoming Data", hex(incoming_data))
 
             if incoming_data == 0xB5:
-                print(hex(incoming_data))
+                print("UBX")
                 self.ubx_frame_counter = 0
                 self.rolling_checksum_A = 0
                 self.rolling_checksum_B = 0
                 self.current_sentence = self.UBX
 
             elif incoming_data == '$':
-                print(incoming_data)
+                print("NMEA")
                 self.current_sentence = self.NMEA
 
             elif incoming_data == 0xD3:
-                print(hex(incoming_data))
+                print("RTCM")
                 self.rtcm_frame_counter = 0
                 self.current_sentence = self.RTCM
 
-        print ("Current Sentence: ", self.current_sentence)
-        if self.current_sentence == 3:
-            print("RTCM")
         if self.current_sentence == self.UBX:
-            print("Frame Counter: ", sel.ubx_frame_counter)
+            print("Frame Counter: ", self.ubx_frame_counter)
             if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
                 self.current_sentence = None
             elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
@@ -596,7 +592,6 @@ class QwiicGpsUblox(object):
             self.outgoing_data_channel = self.COM_PORT_I2C
         
         if self.outgoing_data_channel == self.COM_PORT_I2C:
-            print("u-blox i2C selected")
             return self.check_ublox_i2c()
         elif self.outgoing_data_channel == self.COMM_TYPE_SERIAL:
             pass
@@ -612,10 +607,11 @@ class QwiicGpsUblox(object):
         """
         # We only want to poll every 100ms as per the datasheet.
         if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
+            print("'Perf Counter'{}\nLast Checked:{}\n = {}\n".format(time.perf_counter(), self.last_checked,
+                               time.perf_counter() - self.last_checked))
 
             byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
             bytes_avail = byte_block[1] << 8 | byte_block[0]
-            print(bytes_avail)
 
             # Check LSB for 0xFF  == No bytes available
             if (bytes_avail | 0x00FF)  == 0xFF:
@@ -627,6 +623,7 @@ class QwiicGpsUblox(object):
                 return False
 
             else:
+                print("Bytes available: ", bytes_avail)
                 for i in range(bytes_avail):
 
                     bytes_to_read = bytes_avail
@@ -636,7 +633,11 @@ class QwiicGpsUblox(object):
 
                     incoming = self._i2c.readByte(self.available_addresses[0], 0xFF) 
                     self.process(incoming)
-                    time.sleep(.02)
+                    time.sleep(.012) 
+                    # This is to adress remote I/O failures,
+                    # though I have not confirmed if this helps, though I can
+                    # say from a subjective pov that it has improved
+                    # performance
 
         return True
                 
