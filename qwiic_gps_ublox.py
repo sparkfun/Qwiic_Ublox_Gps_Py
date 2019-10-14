@@ -196,9 +196,10 @@ class QwiicGpsUblox(object):
     # Library variables
     auto_pvt = False
     auto_pvt_implicit_update = False
-    i2c_polling_wait = .1 # 100ms delay between checking for data
-    last_checked = 0  # set to zero
     command_ack = False
+    _print_debug = False
+    i2c_polling_wait = .1 # 100ms delay between checking for data
+    last_checked = 0      # set to zero
     MAX_PAYLOAD_SIZE = 128
     payload_config = [0 for i in range(MAX_PAYLOAD_SIZE)]
     payload_ack = [0 for i in range(2)]
@@ -511,6 +512,62 @@ class QwiicGpsUblox(object):
 
         return self.is_connected()
 
+    def enable_debugging(self):
+        self._print_debug = True
+        print("Debugging enabled.")
+
+    def disable_debugging(self):
+        self._print_debug = False
+        print("Debugging disabled.")
+
+    def get_port_settings(port, MAX_TIME_SHORT):
+
+        pass
+
+    def get_port_settings(port_id, max_wait = MAX_TIME_SHORT):
+        
+        self.ublox_packet_cfg['Class'] = UBX_CLASS_CFG
+        self.ublox_packet_cfg['ID'] = UBX_CFG_PRT
+        self.ublox_packet_cfg['Length'] = 1
+        self.ublox_packet_cfg['Start'] = 0
+
+        self.ublox_packet_cfg[payload_config][0] = port_id
+
+        return send_command(self.ublox_packet_cfg[payload_config], max_wait)
+
+    def set_serial_rate(baudrate, max_wait = MAX_TIME_SHORT):
+        
+        self.get_port_settings(uart_port, max_wait)
+
+        if (self._print_debug) == True:
+
+            curr_baudrate = self.ublox_packet_cfg[payload_config][10] << 16
+            curr_baudrate |= self.ublox_packet_cfg[payload_config][9] << 8
+            curr_baudrate |= self.ublox_packet_cfg[payload_config][8] 
+
+            print("Current Baudrate: {}", curr_baudrate)
+        
+        self.ublox_packet_cfg['Class'] = UBX_CLASS_CFG
+        self.ublox_packet_cfg['ID'] = UBX_CFG_PRT
+        self.ublox_packet_cfg['Length'] = 20
+        self.ublox_packet_cfg['Start'] = 0
+
+        self.ublox_packet_cfg[payload_config][8] = baudrate
+        self.ublox_packet_cfg[payload_config][9] = baudrate >> 8
+        self.ublox_packet_cfg[payload_config][10] = baudrate >> 16
+        self.ublox_packet_cfg[payload_config][11] = baudrate >> 24
+
+        if (self._print_debug) == True:
+
+            curr_baudrate = self.ublox_packet_cfg[payload_config][10] << 16
+            curr_baudrate |= self.ublox_packet_cfg[payload_config][9] << 8
+            curr_baudrate |= self.ublox_packet_cfg[payload_config][8] 
+
+            print("Current Baudrate: {}", curr_baudrate)
+    
+        self.send_command(self.ublox_packet_cfg[payload_config])
+
+
     def process_RTCM(self, incoming_data): #not implemented in Arduino Library
 
          pass 
@@ -585,7 +642,6 @@ class QwiicGpsUblox(object):
         nmea_message = pynmea2.parse(incoming_data)
         print(nmea.message) # yeah?
 
-
     def check_ublox(self):
         
         if self.outgoing_data_channel == None:
@@ -607,7 +663,8 @@ class QwiicGpsUblox(object):
         """
         # We only want to poll every 100ms as per the datasheet.
         if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
-            print("'Perf Counter'{}\nLast Checked:{}\n = {}\n".format(time.perf_counter(), self.last_checked,
+            print("'Perf Counter'{}\nLast Checked:{}\n = {}\n".format(
+                               time.perf_counter(), self.last_checked,
                                time.perf_counter() - self.last_checked))
 
             byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
