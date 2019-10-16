@@ -539,7 +539,7 @@ class QwiicGpsUblox(object):
 
         if self._print_debug:
             print(message)
-        else
+        else:
             return
 
     def set_serial_rate(baudrate, max_wait = MAX_TIME_SHORT):
@@ -600,20 +600,23 @@ class QwiicGpsUblox(object):
         if self.current_sentence == None or self.current_sentence == self.NMEA:
 
             if incoming_data == 0xB5:
-                print("UBX")
+                self.debug_print("UBX")
                 self.ubx_frame_counter = 0
                 self.rolling_checksum_A = 0
                 self.rolling_checksum_B = 0
                 self.current_sentence = self.UBX
 
             elif incoming_data == '$':
-                print("NMEA")
+                self.debug_print("NMEA")
                 self.current_sentence = self.NMEA
 
             elif incoming_data == 0xD3:
-                print("RTCM")
+                self.debug_print("RTCM")
                 self.rtcm_frame_counter = 0
                 self.current_sentence = self.RTCM
+            else:
+                # Missed something
+                pass
 
         if self.current_sentence == self.UBX:
             print("Frame Counter: ", self.ubx_frame_counter)
@@ -681,16 +684,17 @@ class QwiicGpsUblox(object):
 
             # Check LSB for 0xFF  == No bytes available
             if (bytes_avail | 0x00FF)  == 0xFF:
-                debug_print("No bytes available.")
+                self.debug_print("No bytes available.")
                 self.last_checked = time.perf_counter()
                 return False
 
             elif bytes_avail ==  0:
+                self.debug_print("Zero bytes available.")
                 self.last_checked = time.perf_counter()
                 return False
 
             else:
-                print("Bytes available: ", bytes_avail)
+                self.debug_print("Data available.")
                 for i in range(bytes_avail):
 
                     bytes_to_read = bytes_avail
@@ -702,8 +706,7 @@ class QwiicGpsUblox(object):
                     self.process(incoming)
                     time.sleep(.012) 
                     # This is to adress remote I/O failures,
-                    # though I have not confirmed if this helps, though I can
-                    # say from a subjective pov that it has improved
+                    # I can say from a subjective pov that it has improved
                     # performance
 
         return True
