@@ -535,6 +535,13 @@ class QwiicGpsUblox(object):
 
         return send_command(self.ublox_packet_cfg[payload_config], max_wait)
 
+    def debug_print(self, message):
+
+        if self._print_debug:
+            print(message)
+        else
+            return
+
     def set_serial_rate(baudrate, max_wait = MAX_TIME_SHORT):
         
         self.get_port_settings(uart_port, max_wait)
@@ -668,10 +675,13 @@ class QwiicGpsUblox(object):
                                time.perf_counter() - self.last_checked))
 
             byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
+            print("MSB: ", hex(byte_block[1]))
+            print("LSB: ", hex(byte_block[0]))
             bytes_avail = byte_block[1] << 8 | byte_block[0]
 
             # Check LSB for 0xFF  == No bytes available
             if (bytes_avail | 0x00FF)  == 0xFF:
+                debug_print("No bytes available.")
                 self.last_checked = time.perf_counter()
                 return False
 
