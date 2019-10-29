@@ -2106,4 +2106,4 @@ boolean SFE_UBLOX_GPS::getRELPOSNED(uint16_t maxWait)
   relPosInfo.refObsMiss = flags & (1 << 7);
 
   return (true);
-}
+

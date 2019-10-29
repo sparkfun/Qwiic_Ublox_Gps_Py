@@ -50,8 +50,9 @@ def run_example():
         print("Could not connect to to the SparkFun GPS Unit. Double check that\
               it's wired correctly.", file=sys.stderr)
         return
-
+    
     qwiicGPS.begin()
+    qwiicGPS.enable_debugging()
 
     while True:
 

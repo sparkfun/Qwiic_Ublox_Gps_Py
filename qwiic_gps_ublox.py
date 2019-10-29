@@ -510,6 +510,8 @@ class QwiicGpsUblox(object):
 
         """
 
+        self.outgoing_data_channel = self.COM_PORT_I2C
+
         return self.is_connected()
 
     def enable_debugging(self):
@@ -575,7 +577,7 @@ class QwiicGpsUblox(object):
         self.send_command(self.ublox_packet_cfg[payload_config])
 
 
-    def process_RTCM(self, incoming_data): #not implemented in Arduino Library
+    def process_RTCM(self, incoming_data): # Not implemented in Arduino Library
 
          pass 
 
@@ -583,7 +585,7 @@ class QwiicGpsUblox(object):
 
         if self.rtcm_frame_counter == 1:
             self.rtcm_length = (incoming_data & 0x03) << 8
-        elif self.rtcm_length == 2:
+        elif self.rtcm_frame_counter == 2:
             self.rtcm_length |= incoming_data
             self.rtcm_length += 6
 
@@ -592,7 +594,7 @@ class QwiicGpsUblox(object):
         self.process_RTCM(incoming_data)
 
         if self.rtcm_frame_counter == self.rtcm_length:
-            current_sentence = None
+            self.current_sentence = None
 
 
     def process(self, incoming_data):
@@ -621,9 +623,9 @@ class QwiicGpsUblox(object):
         if self.current_sentence == self.UBX:
             print("Frame Counter: ", self.ubx_frame_counter)
             if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
-                self.current_sentence = None
+                self.current_sentence = None # Something went wrong
             elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
-                self.current_sentence = None
+                self.current_sentence = None # Someting went wrong
             elif self.ubx_frame_counter == 2:
                 self.ublox_packet_ack['Counter'] = 0
                 self.ublox_packet_ack['Validate'] = False
@@ -631,9 +633,11 @@ class QwiicGpsUblox(object):
                 self.ublox_packet_cfg['Validate'] = False
 
                 if incoming_data == self.UBX_CLASS_ACK:
+                    print("UBX_CLASS_ACK", self.UBX_CLASS_ACK)
                     self.ubx_frame_class = self.CLASS_ACK
                 else:
                     self.ubx_frame_class = self.CLASS_NACK
+                    print("UBX_CLASS_NNNNACK", self.UBX_CLASS_NACK)
 
             self.ubx_frame_counter += 1
 
@@ -654,13 +658,10 @@ class QwiicGpsUblox(object):
 
     def check_ublox(self):
         
-        if self.outgoing_data_channel == None:
-            self.outgoing_data_channel = self.COM_PORT_I2C
-        
         if self.outgoing_data_channel == self.COM_PORT_I2C:
             return self.check_ublox_i2c()
         elif self.outgoing_data_channel == self.COMM_TYPE_SERIAL:
-            pass
+            pass # Not implemented
         else:
             return False
 
@@ -673,13 +674,8 @@ class QwiicGpsUblox(object):
         """
         # We only want to poll every 100ms as per the datasheet.
         if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
-            print("'Perf Counter'{}\nLast Checked:{}\n = {}\n".format(
-                               time.perf_counter(), self.last_checked,
-                               time.perf_counter() - self.last_checked))
 
             byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
-            print("MSB: ", hex(byte_block[1]))
-            print("LSB: ", hex(byte_block[0]))
             bytes_avail = byte_block[1] << 8 | byte_block[0]
 
             # Check LSB for 0xFF  == No bytes available
@@ -704,7 +700,7 @@ class QwiicGpsUblox(object):
 
                     incoming = self._i2c.readByte(self.available_addresses[0], 0xFF) 
                     self.process(incoming)
-                    time.sleep(.012) 
+                    # time.sleep(.012) 
                     # This is to adress remote I/O failures,
                     # I can say from a subjective pov that it has improved
                     # performance
