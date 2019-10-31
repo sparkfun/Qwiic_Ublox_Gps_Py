@@ -601,7 +601,7 @@ class QwiicGpsUblox(object):
 
         if self.current_sentence == None or self.current_sentence == self.NMEA:
 
-            if incoming_data == 0xB5:
+            if incoming_data == 0xB5: # Binary frames start with 0xB5 
                 self.debug_print("UBX")
                 self.ubx_frame_counter = 0
                 self.rolling_checksum_A = 0
@@ -621,12 +621,11 @@ class QwiicGpsUblox(object):
                 pass
 
         if self.current_sentence == self.UBX:
-            print("Frame Counter: ", self.ubx_frame_counter)
             if self.ubx_frame_counter == 0 and incoming_data != 0xB5:
                 self.current_sentence = None # Something went wrong
             elif self.ubx_frame_counter == 1 and incoming_data != 0x62:
                 self.current_sentence = None # Someting went wrong
-            elif self.ubx_frame_counter == 2:
+            elif self.ubx_frame_counter == 2: # Class
                 self.ublox_packet_ack['Counter'] = 0
                 self.ublox_packet_ack['Validate'] = False
                 self.ublox_packet_cfg['Counter'] = 0
@@ -673,37 +672,52 @@ class QwiicGpsUblox(object):
             :rtype: boolean
         """
         # We only want to poll every 100ms as per the datasheet.
-        if (time.perf_counter() - self.last_checked) >= self.i2c_polling_wait:
+        if (time.monotonic() - self.last_checked) >= self.i2c_polling_wait:
 
-            byte_block = self._i2c.readBlock(self.available_addresses[0], 0xFD, 2)
-            bytes_avail = byte_block[1] << 8 | byte_block[0]
+            bytes_avail = 0
+            byte_block = self._i2c.readBlock(self.address, 0xFD, 2)
+            bytes_avail = byte_block[0] << 8 | byte_block[1]
+            print(bytes_avail)
 
-            # Check LSB for 0xFF  == No bytes available
+            # Check LSB for (0xFF  == No bytes available)
             if (bytes_avail | 0x00FF)  == 0xFF:
                 self.debug_print("No bytes available.")
-                self.last_checked = time.perf_counter()
+                self.last_checked = time.monotonic()
                 return False
 
             elif bytes_avail ==  0:
                 self.debug_print("Zero bytes available.")
-                self.last_checked = time.perf_counter()
+                self.last_checked = time.monotonic()
                 return False
+            
+            elif bytes_avail > 100:
 
-            else:
                 self.debug_print("Data available.")
-                for i in range(bytes_avail):
 
+                while(bytes_avail):
                     bytes_to_read = bytes_avail
 
                     if bytes_to_read > self.I2C_BUFFER_LENGTH:
                         bytes_to_read = self.I2C_BUFFER_LENGTH
 
-                    incoming = self._i2c.readByte(self.available_addresses[0], 0xFF) 
-                    self.process(incoming)
-                    # time.sleep(.012) 
-                    # This is to adress remote I/O failures,
-                    # I can say from a subjective pov that it has improved
-                    # performance
+                    incoming = self._i2c.readBlock(self.address,
+                                                   0xFF, bytes_to_read) 
+                        
+                    for i in range(len(incoming)):
+                        # Rare edge case: 
+                        if i == 0 and incoming[i] == 0x7F:
+                            self.debug_print("Module not ready with data.")
+                            time.sleep(.005)
+                            break
+
+                        self.process(incoming[i])
+
+                    # Our end condition. 
+                    bytes_avail = bytes_avail - bytes_to_read 
+                
+            else: 
+                pass
+
 
         return True
                 
@@ -727,7 +741,7 @@ class QwiicGpsUblox(object):
             self.ublox_packet_cfg['Payload'][4] = device_address << 1;
 
             if send_command(self.ublox_packet_cfg, max_wait) == true:
-                self.available_addresses[0] = device_address
+                self.address[0] = device_address
                 return True
 
             return False
@@ -748,15 +762,15 @@ class QwiicGpsUblox(object):
 
         def send_i2c_command(self, outgoing_ubx_packet, max_wait):
 
-            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+            self._i2c.writeByte(self.address, 0xFF,
                                 self.UBX_SYNCH_1)
-            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+            self._i2c.writeByte(self.address, 0xFF,
                                 self.UBX_SYNCH_2)
-            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+            self._i2c.writeByte(self.address, 0xFF,
                                 self.outgoing_ubx_packet['Class'])
-            self._i2c.writeByte(self.available_addresses[0], 0xFF,
+            self._i2c.writeByte(self.address, 0xFF,
                                 self.outgoing_ubx_packet['ID'])
-            self._i2c.writeWord(self.available_addresses[0], 0xFF,
+            self._i2c.writeWord(self.address, 0xFF,
                                 self.outgoing_ubx_packet['Length'])
 
             bytes_to_send = outgoing_ubx_packet['Length']
