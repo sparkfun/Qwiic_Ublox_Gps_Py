@@ -608,7 +608,7 @@ class QwiicGpsUblox(object):
                 self.rolling_checksum_B = 0
                 self.current_sentence = self.UBX
 
-            elif incoming_data == '$':
+            elif chr(incoming_data) == '$':
                 self.debug_print("NMEA")
                 self.current_sentence = self.NMEA
 
@@ -652,8 +652,9 @@ class QwiicGpsUblox(object):
 
     def process_NMEA(self, incoming_data):
         
-        nmea_message = pynmea2.parse(incoming_data)
-        print(nmea.message) # yeah?
+        print(chr(incoming_data), end='')
+        #nmea_message = pynmea2.parse(incoming_data)
+        #print(nmea.message) # yeah?
 
     def check_ublox(self):
         
@@ -677,7 +678,6 @@ class QwiicGpsUblox(object):
             bytes_avail = 0
             byte_block = self._i2c.readBlock(self.address, 0xFD, 2)
             bytes_avail = byte_block[0] << 8 | byte_block[1]
-            print(bytes_avail)
 
             # Check LSB for (0xFF  == No bytes available)
             if (bytes_avail | 0x00FF)  == 0xFF:
@@ -704,7 +704,7 @@ class QwiicGpsUblox(object):
                                                    0xFF, bytes_to_read) 
                         
                     for i in range(len(incoming)):
-                        # Rare edge case: 
+                        # Rare edge case - needs to continue back at top: 
                         if i == 0 and incoming[i] == 0x7F:
                             self.debug_print("Module not ready with data.")
                             time.sleep(.005)
