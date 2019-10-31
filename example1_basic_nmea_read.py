@@ -52,7 +52,6 @@ def run_example():
         return
     
     qwiicGPS.begin()
-    qwiicGPS.enable_debugging()
 
     while True:
 
