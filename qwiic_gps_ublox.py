@@ -198,7 +198,7 @@ class QwiicGpsUblox(object):
     auto_pvt_implicit_update = False
     command_ack = False
     _print_debug = False
-    i2c_polling_wait = .1 # 100ms delay between checking for data
+    i2c_polling_wait = .100 # 100ms delay between checking for data
     last_checked = 0      # set to zero
     MAX_PAYLOAD_SIZE = 128
     payload_config = [0 for i in range(MAX_PAYLOAD_SIZE)]
@@ -515,10 +515,18 @@ class QwiicGpsUblox(object):
         return self.is_connected()
 
     def enable_debugging(self):
+        """
+            This function enables debug messages peppered through library at
+            functional points.
+            :returns: Does not return anything
+        """
         self._print_debug = True
         print("Debugging enabled.")
 
     def disable_debugging(self):
+        """
+            This funciton disables debug messages.
+        """
         self._print_debug = False
         print("Debugging disabled.")
 
@@ -527,6 +535,12 @@ class QwiicGpsUblox(object):
         pass
 
     def get_port_settings(port_id, max_wait = MAX_TIME_SHORT):
+        """
+            Loads the payloadCfg array with the current protocol bits located
+            the UBX-CFG-PRT register for a given port.
+            :returns: Payload configuration within the UBX-CFG-PRT register
+            :rtype: One byte of Payload Configuration data
+        """
         
         self.ublox_packet_cfg['Class'] = UBX_CLASS_CFG
         self.ublox_packet_cfg['ID'] = UBX_CFG_PRT
@@ -538,6 +552,10 @@ class QwiicGpsUblox(object):
         return send_command(self.ublox_packet_cfg[payload_config], max_wait)
 
     def debug_print(self, message):
+        """
+            This function prints out the given message to the command line. 
+            :returns: Returns nothing
+        """
 
         if self._print_debug:
             print(message)
@@ -545,6 +563,11 @@ class QwiicGpsUblox(object):
             return
 
     def set_serial_rate(baudrate, max_wait = MAX_TIME_SHORT):
+        """
+            This function changes the serial baud rate of the Ublox module.
+            :returns: Nothing is returned because messages are lost temporarily
+            during baud rate change. 
+        """
         
         self.get_port_settings(uart_port, max_wait)
 
@@ -578,10 +601,18 @@ class QwiicGpsUblox(object):
 
 
     def process_RTCM(self, incoming_data): # Not implemented in Arduino Library
-
+        """
+            This function is not implemented but could process RTCM messages.
+            :returns: Nothing
+        """
          pass 
 
     def process_RTCM_frame(self, incoming_data):
+        """
+            This function process RTCM messages and sends that message to the
+            process_RTCM function which is not implemented.
+            :returns: Nothing
+        """
 
         if self.rtcm_frame_counter == 1:
             self.rtcm_length = (incoming_data & 0x03) << 8
@@ -598,6 +629,12 @@ class QwiicGpsUblox(object):
 
 
     def process(self, incoming_data):
+        """
+            This function "processes" the data given by the ublox module to
+            determine the type of information that it is. It then passes this
+            information to a function dedicated to that type. 
+            :returns: Nothing
+        """
 
         if self.current_sentence == None or self.current_sentence == self.NMEA:
 
@@ -651,13 +688,26 @@ class QwiicGpsUblox(object):
             self.process_RTCM_frame(incoming_data)
 
     def process_NMEA(self, incoming_data):
+        """
+            This function prints out streaming NMEA sentences 
+            received from the ublox module. 
+            :return: No return value.
+        """
         
         print(chr(incoming_data), end='')
+        return True
         #nmea_message = pynmea2.parse(incoming_data)
         #print(nmea.message) # yeah?
 
     def check_ublox(self):
-        
+        """
+            This function checks the which data channel data should be piped
+            too before retrieving that data. 
+            :return: Returns True with successful retrieval of data and False
+            otherwise.
+            :rtype: boolean
+        """
+
         if self.outgoing_data_channel == self.COM_PORT_I2C:
             return self.check_ublox_i2c()
         elif self.outgoing_data_channel == self.COMM_TYPE_SERIAL:
@@ -667,17 +717,24 @@ class QwiicGpsUblox(object):
 
     def check_ublox_i2c(self):
         """
-            Checks to see if GPS data is available.
-            :return: Returns True when GPS data is available, and Flase when
+            Checks to see if GPS data is available via I2C protocol.
+            :return: Returns True when GPS data is available, and False when
             not.
             :rtype: boolean
         """
+
+        edge_case = False 
         # We only want to poll every 100ms as per the datasheet.
         if (time.monotonic() - self.last_checked) >= self.i2c_polling_wait:
 
             bytes_avail = 0
-            byte_block = self._i2c.readBlock(self.address, 0xFD, 2)
-            bytes_avail = byte_block[0] << 8 | byte_block[1]
+            try:
+                byte_block = self._i2c.readBlock(self.address, 0xFD, 2)
+                bytes_avail = byte_block[0] << 8 | byte_block[1]
+                # This is a broad class, but the clock stretching error is
+                # consistent with Pi's and the ublox modules.
+            except OSError:
+                return False
 
             # Check LSB for (0xFF  == No bytes available)
             if (bytes_avail | 0x00FF)  == 0xFF:
@@ -690,27 +747,42 @@ class QwiicGpsUblox(object):
                 self.last_checked = time.monotonic()
                 return False
             
+            # Something has gone wrong here, checking register again.
+            # Data will still be there when we get back. 
+            elif bytes_avail > 3000:
+                return True
+
             elif bytes_avail > 100:
 
                 self.debug_print("Data available.")
 
-                while(bytes_avail):
+                while(bytes_avail >= 0):
                     bytes_to_read = bytes_avail
 
                     if bytes_to_read > self.I2C_BUFFER_LENGTH:
                         bytes_to_read = self.I2C_BUFFER_LENGTH
 
-                    incoming = self._i2c.readBlock(self.address,
-                                                   0xFF, bytes_to_read) 
-                        
+                    try:
+                        incoming = self._i2c.readBlock(self.address,
+                                                       0xFF, bytes_to_read) 
+
+                    # This is a broad class, but the clock stretching error is
+                    # consistent with Pi's and the ublox modules.
+                    except OSError:
+                        return False
+
                     for i in range(len(incoming)):
                         # Rare edge case - needs to continue back at top: 
                         if i == 0 and incoming[i] == 0x7F:
+                            edge_case = True
                             self.debug_print("Module not ready with data.")
                             time.sleep(.005)
-                            break
 
                         self.process(incoming[i])
+
+                    if edge_case == True:
+                        edge_case = False
+                        return False 
 
                     # Our end condition. 
                     bytes_avail = bytes_avail - bytes_to_read 
@@ -720,10 +792,6 @@ class QwiicGpsUblox(object):
 
 
         return True
-                
-
-        # There's some additional error checking for the RTK version that
-        # should be added here: bit error (extremely rare edge case).
 
         def set_i2c_address(self, device_address, max_wait):
             """
@@ -747,6 +815,14 @@ class QwiicGpsUblox(object):
             return False
 
         def send_command(self, outgoing_ubx_packet, max_wait):
+            """
+                This function take the given packet and payload, and sends that
+                information including CRC bytes through to the set
+                communication port (default is I2C port).
+                :returns: Returns True on succesful communication and False
+                otherwise
+                :rtype: Boolean
+            """
 
             self.command_ack = False;
             self.calc_checksum(outgoing_ubx_packet)
@@ -761,6 +837,12 @@ class QwiicGpsUblox(object):
             return True
 
         def send_i2c_command(self, outgoing_ubx_packet, max_wait):
+            """
+                This function sends the given packet and payload with CRC to
+                the ublox module through the I2C port. 
+                :returns: Returns true on success and false otherwise.
+                :rtype: Boolean
+            """
 
             self._i2c.writeByte(self.address, 0xFF,
                                 self.UBX_SYNCH_1)
@@ -770,8 +852,10 @@ class QwiicGpsUblox(object):
                                 self.outgoing_ubx_packet['Class'])
             self._i2c.writeByte(self.address, 0xFF,
                                 self.outgoing_ubx_packet['ID'])
-            self._i2c.writeWord(self.address, 0xFF,
-                                self.outgoing_ubx_packet['Length'])
+            self._i2c.writeByte(self.address, 0xFF,
+                                self.outgoing_ubx_packet['Length'] && 0xFF)
+            self._i2c.writeByte(self.address, 0xFF,
+                                self.outgoing_ubx_packet['Length'] >> 8)
 
             bytes_to_send = outgoing_ubx_packet['Length']
 
@@ -787,6 +871,12 @@ class QwiicGpsUblox(object):
             return True
 
         def calc_checksum(self, ubx_packet):
+            """
+                This function calculates and stores the two byte "8-Bit Fletcher" 
+                checksum over the entirety of the message.This is called before 
+                a command message is sent.
+                :returns: Returns nothing
+            """
 
             ubx_packet['Checksum_A'] = 0
             ubx_packet['Checksum_B'] = 0
