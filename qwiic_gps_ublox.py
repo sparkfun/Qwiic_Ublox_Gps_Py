@@ -836,44 +836,10 @@ class QwiicGpsUblox(object):
                                               max_wait)
             return True
 
-        def send_i2c_command(self, outgoing_ubx_packet, max_wait):
-            """
-                This function sends the given packet and payload with CRC to
-                the ublox module through the I2C port. 
-                :returns: Returns true on success and false otherwise.
-                :rtype: Boolean
-            """
-
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.UBX_SYNCH_1)
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.UBX_SYNCH_2)
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.outgoing_ubx_packet['Class'])
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.outgoing_ubx_packet['ID'])
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.outgoing_ubx_packet['Length'] && 0xFF)
-            self._i2c.writeByte(self.address, 0xFF,
-                                self.outgoing_ubx_packet['Length'] >> 8)
-
-            bytes_to_send = outgoing_ubx_packet['Length']
-
-            # I'm going to ignore any limitations of the buffer for now...
-            for i in range(bytes_to_send - 1): # Stop before last write
-                self._i2c.writeByte(outgoing_ubx_packet['Payload'][i])
-
-            # Now write the last available byte in payload_config
-            self._i2c.writeByte(outgoing_ubx_packet['Payload'][bytes_to_send]) #unsure about this
-            self._i2c.writeByte(outgoing_ubx_packet['Checksum_A'])
-            self._i2c.writeByte(outgoing_ubx_packet['Checksum_B'])
-
-            return True
-
         def calc_checksum(self, ubx_packet):
             """
                 This function calculates and stores the two byte "8-Bit Fletcher" 
-                checksum over the entirety of the message.This is called before 
+                checksum over the entirety of the message. This is called before 
                 a command message is sent.
                 :returns: Returns nothing
             """
@@ -898,23 +864,15 @@ class QwiicGpsUblox(object):
                 ubx_packet['Checksum_B'] += ubx_packet['Checksum_A']
 
 
-        def process_RTCM_frame(self, incoming_data):
-
-            if self.rtcm_frame_counter == 1:
-                rtcm_length = (incoming_data & 0x03) << 8
-            elif self.rtcm_length == 2:
-                rtcm_length |= incoming_data
-                rtcm_length += 6
-
-            self.rtcm_frame_counter += 1
-
-            self.process_RTCM(incoming_data)
-
-            if self.rtcm_frame_counter == rtcm_length:
-                current_sentence = None
-
-
         def process_UBX(self, incoming, incoming_ubx):
+            """
+                This function with the passed character, files it away into the UXB packet structure
+                Set valid = true once sentence is completely received and passes CRC
+                The payload portion of the packet can be 100s of bytes but the max array
+                size is roughly 64 bytes. startingSpot can be set so we only record
+                a subset of bytes within a larger packet.
+                :returns: Returns nothing
+            """
 
             if (incoming_ubx['Counter'] <
                 incoming_ubx['Length'] + 4):
@@ -967,6 +925,13 @@ class QwiicGpsUblox(object):
             incoming_ubx['Counter'] += 1
 
         def process_UBX_packet(self, packet_message):
+            """
+                This function takes the packet that has been validated and
+                identifies the packet's class and ID, and then updates internal
+                flags.
+                :returns: Nothing is returned
+                :rtype: None
+            """
            
            packet_class = packet_message['Class']
 
@@ -1029,6 +994,8 @@ class QwiicGpsUblox(object):
                    self.is_module_queried['heading_motion'] = True
                    self.is_module_queried['pDOP'] = True
 
+                   return None
+
                elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH
                       and packet_message['Length'] == 36):
 
@@ -1051,10 +1018,43 @@ class QwiicGpsUblox(object):
                    self.is_high_res_module_queried['horizontal_accuracy'] = True
                    self.is_high_res_module_queried['vertical_accuracy'] = True
 
+                      if (self._print_debug== true)
+                      { self.debug_print("Sec: ");
+                        self.debug_print(float(self.extract_long(4)) / 1000);
+                        self.debug_print(" ");
+                        self.debug_print("LON: ");
+                        self.debug_print(float(self.extract_long(8)) / 10000000);
+                        self.debug_print(" ");
+                        self.debug_print("LAT: ");
+                        self.debug_print(float(self.extract_long(12) / 10000000);
+                        self.debug_print(" ");
+                        self.debug_print("ELI M: ");
+                        self.debug_print(float(self.extract_long(16)) / 1000);
+                        self.debug_print(" ");
+                        self.debug_print("MSL M: ");
+                        self.debug_print(float(self.extract_long(20)) / 1000);
+                        self.debug_print(" ");
+                        self.debug_print("GEO: ");
+                        self.debug_print(float(self.extract_long(24)) / 1000);
+                        self.debug_print(" ");
+                        self.debug_print("HA 2D M: ");
+                        self.debug_print(float(self.extract_long(28)) / 1000);
+                        self.debug_print(" ");
+                        self.debug_print("VERT M: ");
+                        self.debug_print(float(self.extract_long(32)) / 1000);
+                        self.debug_print(" ");
+                      }
+                    }
 
+                   return None
 
         def extract_long(self, initial_index):
-
+            """
+                This function takes an index and builds a four byte long
+                integer from that starting index. 
+                :returns: Return the constructed value. 
+                :rtype: 4 byte value
+            """
             # LSB to MSB
             val = 0
             val |= ublox_packet_cfg['Payload'][initial_index]
@@ -1064,6 +1064,12 @@ class QwiicGpsUblox(object):
             return val
 
         def extract_int(self, initial_index):
+            """
+                This function takes an index and builds a two byte integer  
+                integer from that starting index. 
+                :returns: Return the constructed value. 
+                :rtype: 2 byte value
+            """
 
             val = 0
             val |= ublox_packet_cfg['Payload'][initial_index]
@@ -1071,10 +1077,22 @@ class QwiicGpsUblox(object):
             return val
 
         def extract_byte(self, initial_index):
+            """
+                This function takes an index and returns the byte at that
+                location.
+                :returns: Return a byte.
+                :rtype: Single byte
+            """
 
             return(ublox_packet_cfg['Payload'][initial_index])
 
         def get_latitude(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function returns the current latitude in degrees. 
+                :returns: Returns a 4 byte long representing the number in
+                degrees *10^7
+                :rtype: 4 byte long
+            """
 
             if self.is_module_queried['Latitude'] == False:
                 self.get_pvt();
@@ -1084,6 +1102,12 @@ class QwiicGpsUblox(object):
             return self.latitude
 
         def get_longitude(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function returns the current latitude in degrees. 
+                :returns: Returns a 4 byte long representing the number in
+                degrees *10^7
+                :rtype: 4 byte long
+            """
 
             if self.is_module_queried['Longitude'] == False:
                 self.get_pvt();
@@ -1093,6 +1117,12 @@ class QwiicGpsUblox(object):
             return self.longitude
 
         def get_altitude(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current altitude in millimeters
+                according to an ellipsoid model.
+                :returns: Altitude
+                :rtype: 4 byte long
+            """
 
             if self.is_module_queried['Altitude'] == False:
                 self.get_pvt();
@@ -1102,6 +1132,11 @@ class QwiicGpsUblox(object):
             return self.altitude
 
         def get_year(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current year. 
+                :returns: Return the year value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_year'] == False:
                 self.get_pvt();
@@ -1111,6 +1146,11 @@ class QwiicGpsUblox(object):
             return self.gps_year
 
         def get_month(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current month. 
+                :returns: Return the month value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_month'] == False:
                 self.get_pvt();
@@ -1120,6 +1160,11 @@ class QwiicGpsUblox(object):
             return self.gps_month
 
         def get_day(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current day. 
+                :returns: Return the day value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_day'] == False:
                 self.get_pvt();
@@ -1129,6 +1174,11 @@ class QwiicGpsUblox(object):
             return self.get_day
 
         def get_hour(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current hour. 
+                :returns: Return the hour value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_hour'] == False:
                 self.get_pvt();
@@ -1138,6 +1188,11 @@ class QwiicGpsUblox(object):
             return self.gps_hour
 
         def get_second(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current second. 
+                :returns: Return the "second" value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_second'] == False:
                 self.get_pvt();
@@ -1147,6 +1202,11 @@ class QwiicGpsUblox(object):
             return self.gps_second
 
         def get_millisecond(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current millisecond. 
+                :returns: Returns the millisecond value.
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_iTOW'] == False:
                 self.get_pvt();
@@ -1156,6 +1216,11 @@ class QwiicGpsUblox(object):
             return self.gps_millisecond
 
         def get_nanosecond(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current nanosecond.
+                :returns: Returns the nanosecond value. 
+                :rtype: Four byte long
+            """
 
             if self.is_module_queried['GPS_nanosecond'] == False:
                 self.get_pvt();
@@ -1165,6 +1230,11 @@ class QwiicGpsUblox(object):
             return self.gps_nanosecond
 
         def get_time_of_week(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current day of the week.
+                :returns: Returns the day of the week value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['time_of_week'] == False:
                 self.get_hppos_llh();
@@ -1174,6 +1244,11 @@ class QwiicGpsUblox(object):
             return self.time_of_week
 
         def get_high_res_latitude(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the latitude with greater resolution. This
+                :returns: Returns a high resolution latitude. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['Latitude'] == False:
                 self.get_hppos_llh();
@@ -1183,6 +1258,11 @@ class QwiicGpsUblox(object):
             return self.high_res_latitude
 
         def get_high_res_longitude(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the longitude with greater resolution. This
+                :returns: Returns a high resolution longitude. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['Longitude'] == False:
                 self.get_hppos_llh();
@@ -1192,6 +1272,11 @@ class QwiicGpsUblox(object):
             return self.high_res_longitude
 
         def get_mean_sea_level(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the mean sea level.
+                :returns: Returns the sea level value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['mean_sea_level'] == False:
                 self.get_hppos_llh();
@@ -1200,7 +1285,12 @@ class QwiicGpsUblox(object):
 
             return self.mean_sea_level
 
-        def get_geo_id_separation(self, max_wait = self.MAX_TIME_SHORT):
+        def get_geoid_separation(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the geoidal separation. 
+                :returns: Returns the geiodal value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['geo_id_separation'] == False:
                 self.get_hppos_llh();
@@ -1211,6 +1301,11 @@ class QwiicGpsUblox(object):
 
 
         def get_horizontal_accuracy(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the horizontal accuracy of the module. 
+                :returns: Returns the horizontal accuracy  value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['horizontal_accuracy'] == False:
                 self.get_hppos_llh();
@@ -1220,6 +1315,11 @@ class QwiicGpsUblox(object):
             return self.horizontal_accuracy
 
         def get_vertical_accuracy(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the vertical accuracy of the module. 
+                :returns: Returns the vertical accuracy  value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_high_res_module_queried['vertical_accuracy'] == False:
                 self.get_hppos_llh();
@@ -1229,6 +1329,12 @@ class QwiicGpsUblox(object):
             return self.vertical_accuracy
 
         def get_hppos_llh(self, max_wait = MAX_TIME_LONG):
+            """
+                This function gets the high-precision latitude/longitude from
+                the module.
+                :returns: Returns the hpll  value. 
+                :rtype: Four byte long.
+            """
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_NAV
             self.ublox_packet_cfg['ID'] = self.UBX_NAV_HPPOSLLH
@@ -1237,6 +1343,11 @@ class QwiicGpsUblox(object):
             return self.send_command(self.ublox_packet_cfg, max_wait)
 
         def get_position_accuracy(self, max_wait = MAX_TIME_MED):
+            """
+                This function gets the positional  accuracy of the module. 
+                :returns: Returns the positional accuracy  value. 
+                :rtype: Four byte long.
+            """
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_NAV
             self.ublox_packet_cfg['ID'] = self.UBX_NAV_HPPOSECEF
@@ -1256,6 +1367,11 @@ class QwiicGpsUblox(object):
             return temp_accuracy
 
         def get_altitude_MSL(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function 
+                :returns: Returns the positional accuracy  value. 
+                :rtype: Four byte long.
+            """
 
             if self.is_module_queried['Altitude_MSL'] == False:
                 self.get_pvt();
