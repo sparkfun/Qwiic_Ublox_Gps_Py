@@ -1368,8 +1368,8 @@ class QwiicGpsUblox(object):
 
         def get_altitude_MSL(self, max_wait = self.MAX_TIME_SHORT):
             """
-                This function 
-                :returns: Returns the positional accuracy  value. 
+                This function gets the altitude relative to the mean sea level. 
+                :returns: Returns the altitude value. 
                 :rtype: Four byte long.
             """
 
@@ -1381,6 +1381,11 @@ class QwiicGpsUblox(object):
             return self.altitude_MSL
 
         def get_SIV(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the number of satellites used to get a fix.
+                :returns: Returns the number of satellites. 
+                :rtype: Byte
+            """
 
             if self.is_module_queried['SIV'] == False:
                 self.get_pvt();
@@ -1390,6 +1395,11 @@ class QwiicGpsUblox(object):
             return self.SIV
 
         def get_fix_type(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the current fix type. 
+                :returns: Returns the fix type. 
+                :rtype: Byte
+            """
 
             if self.is_module_queried['fix_type'] == False:
                 self.get_pvt();
@@ -1399,6 +1409,14 @@ class QwiicGpsUblox(object):
             return self.fix_type
 
         def get_carrier_solution_type(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the carrier phase range solution status
+                which is useful when querying the nmodule to see if it has a high
+                precision RTK fix. 
+                :returns: Will return "0" if no solution, "1" if Float
+                solution, and "2" if Fixed solution. 
+                :rtype: Byte
+            """
 
             if self.is_module_queried['carrier_solution'] == False:
                 self.get_pvt();
@@ -1408,6 +1426,12 @@ class QwiicGpsUblox(object):
             return self.carrier_solution
 
         def get_ground_speed(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the ground speed measured in millimeters a
+                second. 
+                :returns: Returns ground speed in millimeters a second. 
+                :rtype: 4 byte long
+            """
 
             if self.is_module_queried['ground_speed'] == False:
                 self.get_pvt();
@@ -1417,6 +1441,11 @@ class QwiicGpsUblox(object):
             return self.ground_speed
 
         def get_heading(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the heading of motion in degress. 
+                :returns: Returns heading in degress * 10^5
+                :rtype: 4 byte long
+            """
 
             if self.is_module_queried['heading_motion'] == False:
                 self.get_pvt();
@@ -1426,6 +1455,11 @@ class QwiicGpsUblox(object):
             return self.heading_motion
 
         def get_PDOP(self, max_wait = self.MAX_TIME_SHORT):
+            """
+                This function gets the positional dillution of precision.
+                :returns: Returns positional dilution * 10^2
+                :rtype: 2 byte integer. 
+            """
 
             if self.is_module_queried['pDOP'] == False:
                 self.get_pvt();
@@ -1435,6 +1469,11 @@ class QwiicGpsUblox(object):
             return self.pDOP
 
         def get_protocol_version_high(self, max_wait = self.MAX_TIME_LONG):
+            """
+                This function gets the protocol version of the module.
+                :returns: Returns positional dilution * 10^2
+                :rtype: 2 byte integer. 
+            """
 
             if self.is_module_queried['version_num'] == False:
                 self.get_pvt();
