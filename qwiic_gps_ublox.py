@@ -73,7 +73,6 @@ import time
 import math
 import sys
 import qwiic_i2c
-import pynmea2
 
 #======================================================================
 # NOTE: For Raspberry Pi
@@ -605,7 +604,7 @@ class QwiicGpsUblox(object):
             This function is not implemented but could process RTCM messages.
             :returns: Nothing
         """
-         pass 
+        pass 
 
     def process_RTCM_frame(self, incoming_data):
         """
@@ -932,121 +931,119 @@ class QwiicGpsUblox(object):
                 :returns: Nothing is returned
                 :rtype: None
             """
-           
-           packet_class = packet_message['Class']
+                                
+            packet_class = packet_message['Class']
+ 
+            if packet_class == self.UBX_CLASS_ACK:
+                if (packet_message['ID'] == self.UBX_ACK_ACK and 
+                    packet_message['Payload'][0] ==
+                    self.ubx_frame_class['Class'] and 
+                    packet_message['Payload'][1] ==
+                    self.ubx_frame_class['ID']):
+ 
+                    self.command_ack = True
+ 
+                    return None
+         
+            elif packet_class == self.UBX_CLASS_NAV:
+                if (packet_message['ID'] == self.UBX_NAV_PVT and 
+                    packet_message['Length'] == 92):
+ 
+                    initial_index = 0
+ 
+                    self.gps_millisecond = self.extract_long(0) % 1000
+                    self.gps_year = self.extract_int(4)
+                    self.gps_month = self.extract_byte(6)
+                    self.gps_day = self.extract_byte(7)
+                    self.gps_hour = self.extract_byte(8)
+                    self.gps_minute = self.extract_byte(9)
+                    self.gps_second = self.extract_byte(10)
+                    self.gps_nanosecond = self.extract_long(16)
+ 
+                    self.fix_type = self.extract_byte(20 - initial_index)
+                    self.carrier_solution = self.extract_byte(21 - initial_index) >> 6
+ 
+                    self.SIV = self.extract_byte(23 - initial_index)
+                    self.longitude = self.extract_long(24 - initial_index)
+                    self.latitude = self.extract_long(28 - initial_index)
+                    self.altitude = self.extract_long(32 - initial_index)
+                    self.altitude_MSL = self.extract_long(36 - initial_index)
+                    self.ground_speed = self.extract_long(60 - initial_index)
+                    self.heading_motion = self.extract_long(64 - initial_index)
+                    self.pDOP = self.extract_long(76 - initial_index)
+ 
+                    self.is_module_queried['GPS_iTOW'] = True
+                    self.is_module_queried['GPS_year'] = True
+                    self.is_module_queried['GPS_month'] = True
+                    self.is_module_queried['GPS_day'] = True
+                    self.is_module_queried['GPS_hour'] = True
+                    self.is_module_queried['GPS_minute'] = True
+                    self.is_module_queried['GPS_second'] = True
+                    self.is_module_queried['GPS_nanosecond'] = True
+ 
+                    self.is_module_queried['All'] = True
+                    self.is_module_queried['Longitude'] = True
+                    self.is_module_queried['Latitude'] = True
+                    self.is_module_queried['Altitude'] = True
+                    self.is_module_queried['Altitude_MSL'] = True
+                    self.is_module_queried['SIV'] = True
+                    self.is_module_queried['fix_type'] = True
+                    self.is_module_queried['carrier_solution'] = True
+                    self.is_module_queried['ground_speed'] = True
+                    self.is_module_queried['heading_motion'] = True
+                    self.is_module_queried['pDOP'] = True
+ 
+                    return None
+ 
+                elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH
+                       and packet_message['Length'] == 36):
+ 
+                    self.time_of_week = self.extract_Long(4)
+                    self.high_res_longitude = self.extract_long(8)
+                    self.high_res_latitude = self.extract_long(12)
+                    self.elipsoid = self.extract_long(16)
+                    self.mean_sea_level = self.extract_long(20)
+                    self.geo_id_separation = self.extract_long(24)
+                    self.horizontal_accuracy = self.extract_long(28)
+                    self.vertical_accuracy = self.extract_long(32)
+ 
+                    self.is_high_res_module_queried['All'] = True
+                    self.is_high_res_module_queried['time_of_week'] = True
+                    self.is_high_res_module_queried['high_res_latitude'] = True
+                    self.is_high_res_module_queried['high_res_longitude'] = True
+                    self.is_high_res_module_queried['elipsoid'] = True
+                    self.is_high_res_module_queried['mean_sea_level'] = True
+                    self.is_high_res_module_queried['geo_id_separation'] = True
+                    self.is_high_res_module_queried['horizontal_accuracy'] = True
+                    self.is_high_res_module_queried['vertical_accuracy'] = True
+ 
+                    if (self._print_debug== true):
+                        self.debug_print("Sec: ")
+                        self.debug_print(float(self.extract_long(4)) / 1000)
+                        self.debug_print(" ")
+                        self.debug_print("LON: ")
+                        self.debug_print(float(self.extract_long(8)) / 10000000)
+                        self.debug_print(" ")
+                        self.debug_print("LAT: ")
+                        self.debug_print(float(self.extract_long(12)) / 10000000)
+                        self.debug_print(" ")
+                        self.debug_print("ELI M: ")
+                        self.debug_print(float(self.extract_long(16)) / 1000)
+                        self.debug_print(" ")
+                        self.debug_print("MSL M: ")
+                        self.debug_print(float(self.extract_long(20)) / 1000)
+                        self.debug_print(" ")
+                        self.debug_print("GEO: ")
+                        self.debug_print(float(self.extract_long(24)) / 1000)
+                        self.debug_print(" ")
+                        self.debug_print("HA 2D M: ")
+                        self.debug_print(float(self.extract_long(28)) / 1000)
+                        self.debug_print(" ")
+                        self.debug_print("VERT M: ")
+                        self.debug_print(float(self.extract_long(32)) / 1000)
+                        self.debug_print(" ")
 
-           if packet_class == self.UBX_CLASS_ACK:
-               if (packet_message['ID'] == self.UBX_ACK_ACK and 
-                   packet_message['Payload'][0] ==
-                   self.ubx_frame_class['Class'] and 
-                   packet_message['Payload'][1] ==
-                   self.ubx_frame_class['ID']):
-
-                   self.command_ack = True
-
-                   return None
-        
-           elif packet_class == self.UBX_CLASS_NAV:
-               if (packet_message['ID'] == self.UBX_NAV_PVT and 
-                   packet_message['Length'] == 92):
-
-                   initial_index = 0
-
-                   self.gps_millisecond = self.extract_long(0) % 1000
-                   self.gps_year = self.extract_int(4)
-                   self.gps_month = self.extract_byte(6)
-                   self.gps_day = self.extract_byte(7)
-                   self.gps_hour = self.extract_byte(8)
-                   self.gps_minute = self.extract_byte(9)
-                   self.gps_second = self.extract_byte(10)
-                   self.gps_nanosecond = self.extract_long(16)
-
-                   self.fix_type = self.extract_byte(20 - initial_index)
-                   self.carrier_solution = self.extract_byte(21 - initial_index) >> 6
-
-                   self.SIV = self.extract_byte(23 - initial_index)
-                   self.longitude = self.extract_long(24 - initial_index)
-                   self.latitude = self.extract_long(28 - initial_index)
-                   self.altitude = self.extract_long(32 - initial_index)
-                   self.altitude_MSL = self.extract_long(36 - initial_index)
-                   self.ground_speed = self.extract_long(60 - initial_index)
-                   self.heading_motion = self.extract_long(64 - initial_index)
-                   self.pDOP = self.extract_long(76 - initial_index)
-
-                   self.is_module_queried['GPS_iTOW'] = True
-                   self.is_module_queried['GPS_year'] = True
-                   self.is_module_queried['GPS_month'] = True
-                   self.is_module_queried['GPS_day'] = True
-                   self.is_module_queried['GPS_hour'] = True
-                   self.is_module_queried['GPS_minute'] = True
-                   self.is_module_queried['GPS_second'] = True
-                   self.is_module_queried['GPS_nanosecond'] = True
-
-                   self.is_module_queried['All'] = True
-                   self.is_module_queried['Longitude'] = True
-                   self.is_module_queried['Latitude'] = True
-                   self.is_module_queried['Altitude'] = True
-                   self.is_module_queried['Altitude_MSL'] = True
-                   self.is_module_queried['SIV'] = True
-                   self.is_module_queried['fix_type'] = True
-                   self.is_module_queried['carrier_solution'] = True
-                   self.is_module_queried['ground_speed'] = True
-                   self.is_module_queried['heading_motion'] = True
-                   self.is_module_queried['pDOP'] = True
-
-                   return None
-
-               elif (packet_message['ID'] == self.UBX_NAV_HPPOSLLH
-                      and packet_message['Length'] == 36):
-
-                   self.time_of_week = self.extract_Long(4)
-                   self.high_res_longitude = self.extract_long(8)
-                   self.high_res_latitude = self.extract_long(12)
-                   self.elipsoid = self.extract_long(16)
-                   self.mean_sea_level = self.extract_long(20)
-                   self.geo_id_separation = self.extract_long(24)
-                   self.horizontal_accuracy = self.extract_long(28)
-                   self.vertical_accuracy = self.extract_long(32)
-
-                   self.is_high_res_module_queried['All'] = True
-                   self.is_high_res_module_queried['time_of_week'] = True
-                   self.is_high_res_module_queried['high_res_latitude'] = True
-                   self.is_high_res_module_queried['high_res_longitude'] = True
-                   self.is_high_res_module_queried['elipsoid'] = True
-                   self.is_high_res_module_queried['mean_sea_level'] = True
-                   self.is_high_res_module_queried['geo_id_separation'] = True
-                   self.is_high_res_module_queried['horizontal_accuracy'] = True
-                   self.is_high_res_module_queried['vertical_accuracy'] = True
-
-                      if (self._print_debug== true)
-                      { self.debug_print("Sec: ");
-                        self.debug_print(float(self.extract_long(4)) / 1000);
-                        self.debug_print(" ");
-                        self.debug_print("LON: ");
-                        self.debug_print(float(self.extract_long(8)) / 10000000);
-                        self.debug_print(" ");
-                        self.debug_print("LAT: ");
-                        self.debug_print(float(self.extract_long(12) / 10000000);
-                        self.debug_print(" ");
-                        self.debug_print("ELI M: ");
-                        self.debug_print(float(self.extract_long(16)) / 1000);
-                        self.debug_print(" ");
-                        self.debug_print("MSL M: ");
-                        self.debug_print(float(self.extract_long(20)) / 1000);
-                        self.debug_print(" ");
-                        self.debug_print("GEO: ");
-                        self.debug_print(float(self.extract_long(24)) / 1000);
-                        self.debug_print(" ");
-                        self.debug_print("HA 2D M: ");
-                        self.debug_print(float(self.extract_long(28)) / 1000);
-                        self.debug_print(" ");
-                        self.debug_print("VERT M: ");
-                        self.debug_print(float(self.extract_long(32)) / 1000);
-                        self.debug_print(" ");
-                      }
-                    }
-
-                   return None
+                    return None
 
         def extract_long(self, initial_index):
             """
