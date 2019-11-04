@@ -1470,9 +1470,10 @@ class QwiicGpsUblox(object):
 
         def get_protocol_version_high(self, max_wait = self.MAX_TIME_LONG):
             """
-                This function gets the protocol version of the module.
-                :returns: Returns positional dilution * 10^2
-                :rtype: 2 byte integer. 
+                This function gets the greater protocol version number of 
+                the module.
+                :returns: The greater protocol version number. 
+                :rtype: Byte
             """
 
             if self.is_module_queried['version_num'] == False:
@@ -1483,7 +1484,12 @@ class QwiicGpsUblox(object):
             return self.version_high
 
         def get_protocol_version_low(self, max_wait = self.MAX_TIME_LONG):
-
+            """
+                This function gets the lower protocol version number of 
+                the module.
+                :returns: The lower protocol version number. 
+                :rtype: Byte
+            """
             if self.is_module_queried['version_num'] == False:
                 self.get_pvt();
             self.is_module_queried['version_num'] = False
@@ -1492,7 +1498,16 @@ class QwiicGpsUblox(object):
             return self.version_low
 
         def get_protocol_version(self, max_wait = self.MAX_TIME_LONG):
-
+            """
+                This function gets the protocol version number of 
+                the module.
+                :returns: The protocol version number. 
+                :rtype: Byte
+            """
+            if self.is_module_queried['version_num'] == False:
+                self.get_pvt();
+            self.is_module_queried['version_num'] = False
+            self.is_module_queried['All'] = False
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_MON
             self.ublox_packet_cfg['ID'] = self.UBX_MON_VER
 
@@ -1518,11 +1533,17 @@ class QwiicGpsUblox(object):
 
                     return self.version_low
 
-            is_module_queried['version_num'] = True
+            self.is_module_queried['version_num'] = True
 
             return True
 
         def get_PVT(self, max_wait = self.MAX_TIME_LONG):
+            """
+                This function gets the latest positional, veloticy, and time
+                solution and fills all global variables. 
+                :returns: True upon success and false otherwise. 
+                :rtype: Boolean
+            """
 
             if self.auto_pvt and self.auto_pvt_implicit_update:
                 self.check_ublox_i2C()
@@ -1538,6 +1559,13 @@ class QwiicGpsUblox(object):
                 return self.send_command(self.ublox_packet_cfg, max_wait)
 
         def assume_auto_PVT(self, enabled, implicit_update):
+            """
+                This function sets the configuration to suitable parameters in
+                the case no configuaration access to the GPS is possible and
+                PVT is sent cyclically already. 
+                :returns: True upon success and false otherwise. 
+                :rtype: Boolean
+            """
 
             change = (self.auto_pvt != enabled |
                       self.auto_pvt_implicit_update != implicit_update)
@@ -1549,6 +1577,12 @@ class QwiicGpsUblox(object):
             return change
 
         def set_auto_pvt(self, enable, implicit_update = None, max_wait = MAX_TIME_SHORT):
+            """
+                This function enables or disables automatic naviation message
+                generation by the GPS. This will change the way get_PVT. 
+                :returns: True upon success and false otherwise. 
+                :rtype: Boolean
+            """
 
             if implicit_update == None:
                 implicit_update = True
@@ -1570,7 +1604,11 @@ class QwiicGpsUblox(object):
             self.is_module_queried['All'] = False
             return sent
 
-        def hard_rest(self):
+        def hard_reset(self):
+            """
+                This function resets the ublox module. 
+                :returns: Nothing
+            """
 
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
             self.ublox_packet_cfg['ID'] = self.UBX_CFG_RST
@@ -1584,7 +1622,10 @@ class QwiicGpsUblox(object):
             self.send_command(self.ublox_packet_cfg, 0)
 
         def factory_reset(self):
-
+            """
+                This function resets the ublox module. 
+                :returns: Nothing
+            """
             self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
             self.ublox_packet_cfg['ID'] = self.UBX_CFG_CFG
             self.ublox_packet_cfg['Length'] = 13
@@ -1597,5 +1638,5 @@ class QwiicGpsUblox(object):
 
             self.ublox_packet_cfg['Payload'][12] = 0xFF
             self.send_command(self.ublox_packet_cfg, 0)
-            hard_reset()
+            self.hard_reset()
 
