@@ -55,8 +55,8 @@ def run_example():
 
     while True:
 
-        qwiicGPS.check_ublox()
-        time.sleep(.5)
+        print(qwiicGPS.check_ublox())
+        time.sleep(.200)
 
 if __name__ == '__main__':
     try:

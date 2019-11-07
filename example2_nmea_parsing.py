@@ -40,7 +40,6 @@ from __future__ import print_function
 import qwiic_gps_ublox
 import time
 import sys
-import pynmea2
 
 def run_example():
 
@@ -53,11 +52,12 @@ def run_example():
         return
     
     qwiicGPS.begin()
+    qwiicGPS.enable_nmea_package()
 
     while True:
 
-        qwiicGPS.check_ublox()
-        time.sleep(.5)
+        print(qwiicGPS.check_ublox())
+        time.sleep(.200)
 
 if __name__ == '__main__':
     try:
