@@ -55,8 +55,10 @@ def run_example():
 
     while True:
 
-        print(qwiicGPS.check_ublox())
-        time.sleep(.200)
+        data = qwiicGPS.check_ublox()
+        if data is not None: 
+            for i in range(len(data)):
+                print(data[i])
 
 if __name__ == '__main__':
     try:

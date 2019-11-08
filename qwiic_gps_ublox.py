@@ -72,6 +72,7 @@ from __future__ import print_function, division
 import time
 import sys
 import qwiic_i2c
+import pynmea2
 
 #======================================================================
 # NOTE: For Raspberry Pi
@@ -331,6 +332,21 @@ class QwiicGpsUblox(object):
         'is_moving'        : False,
         'ref_pos_miss'     : False,
         'ref_obs_miss'     : False
+    }
+
+    parsed_gnss_messages = {
+
+        'Latitude'       : 0.0,
+        'Lat_Direction'  : " ",
+        'Longitude'      : 0.0,
+        'Long_Direction' : " ",
+        'Altitude'       : 0.0,
+        'Altitude_Units' : " ",
+        'Sat_Number'     : 0,
+        'Geo_Seperation' : 0.0,
+        'Geo_Sep_Units'  : 0.0,
+        'Data_Age'       : 0,
+        'Ref_Station_ID' : 0
     }
 
     # Lists of various settings:
@@ -693,7 +709,8 @@ class QwiicGpsUblox(object):
                 self.process_UBX(incoming_data, self.ublox_packet_ack)
             elif self.ubx_frame_class == self.CLASS_NACK:
                 self.process_UBX(incoming_data, self.ublox_packet_cfg)
-            return None
+            else:
+                return None
 
         elif self.current_sentence == self.NMEA:
             return self.process_NMEA(incoming_data)
@@ -712,16 +729,36 @@ class QwiicGpsUblox(object):
         data = chr(incoming_data)
 
         # pynmea2 takes full sentences so we're building them here.
-        if self.package_nmea is True:
-            self.word = self.word + data
-            if data == '\n':
-                complete_sentence = self.word
-                self.word = ""
-                return complete_sentence
+        self.word = self.word + data
+        if data == '\n':
+            complete_sentence = self.word
+            self.word = ""
+            return complete_sentence
 
+        return None
+
+
+    def get_nmea_raw(self):
+
+        data = self.check_ublox()
+        if data is not None: 
+            print(data)
+            return data
+        else:
             return None
 
-        return data
+    def get_nmea_parsed(self):
+            
+        data = self.get_nmea_raw()
+        if data is not None:
+            msg = [0 for i in len(data)]
+            for sentence, index in enumerate(data):
+                msg[index] = pynmea2.parse(sentence)
+             
+            return msg
+
+        else:
+            return None
 
 
     def check_ublox(self):
@@ -749,6 +786,7 @@ class QwiicGpsUblox(object):
         """
 
         edge_case = False
+        sen_count = 0
         # We only want to poll every 100ms as per the datasheet.
         if (time.monotonic() - self.last_checked) >= self.i2c_polling_wait:
 
@@ -780,9 +818,11 @@ class QwiicGpsUblox(object):
             elif bytes_avail > 100:
 
                 self.debug_print("Data available.")
+                gnss_sentences = [0 for i in range(bytes_avail)]
 
                 while bytes_avail >= 0:
                     bytes_to_read = bytes_avail
+                    
 
                     if bytes_to_read > self.I2C_BUFFER_LENGTH:
                         bytes_to_read = self.I2C_BUFFER_LENGTH
@@ -795,11 +835,11 @@ class QwiicGpsUblox(object):
                     # consistent with the amount of clock stretching done by
                     # the ublox module.
                     except OSError:
-                        return None
+                        break 
 
-                    for index, data in enumerate(incoming):
+                    for index, gnss_data in enumerate(incoming):
                         # Rare edge case - needs to continue back at top:
-                        if index == 0 and data == 0x7F:
+                        if index == 0 and gnss_data == 0x7F:
                             edge_case = True
                             self.debug_print("Module not ready with data.")
                             time.sleep(.005)
@@ -808,19 +848,18 @@ class QwiicGpsUblox(object):
                             edge_case = False
                             return None
 
-                        has_returned = self.process(data)
-                        if not None in has_returned:
-                            return has_returned
-
+                        data = self.process(gnss_data)
+                        if data is not None:
+                            gnss_sentences[sen_count] = data
+                            sen_count = sen_count + 1
 
                     # Our end condition.
                     bytes_avail = bytes_avail - bytes_to_read
-
-            else:
-                return None
-
-
-        return True
+            
+                return gnss_sentences
+        else:
+            return None
+                
 
     def set_i2c_address(self, device_address, max_wait):
         """
