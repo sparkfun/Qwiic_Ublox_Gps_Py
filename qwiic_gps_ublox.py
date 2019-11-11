@@ -752,7 +752,18 @@ class QwiicGpsUblox(object):
 
 
     def add_to_nmea_dictionary(self, sentence):
-        pass
+
+        self.parsed_gnss_messages['Latitude'] = sentence.lat
+        self.parsed_gnss_messages['Lat_Direction'] = sentence.lat_dir
+        self.parsed_gnss_messages['Longitude'] = sentence.long
+        self.parsed_gnss_messages['Long_Direction'] = sentence.long_dir
+        self.parsed_gnss_messages['Altitude'] = sentence.altitude
+        self.parsed_gnss_messages['Altitude_Units'] = sentence.altitude_units
+        self.parsed_gnss_messages['Sat_Number'] = sentence.num_sats
+        self.parsed_gnss_messages['Geo_Seperation'] = sentence.geo_sep
+        self.parsed_gnss_messages['Geo_Sep_Units'] = sentence.geo_sep_units
+        self.parsed_gnss_messages['Data_Age'] = sentence.age_gps_data
+        self.parsed_gnss_messages['Ref_Station_ID'] = sentence.ref_station_id
 
     def clean_nmea_list(self, raw_gnss_list):
 
@@ -788,13 +799,13 @@ class QwiicGpsUblox(object):
                 try:
                     msg[msg_count] = pynmea2.parse(sentence)
                     msg_count = msg_count + 1
-                    self.add_to_nmea_dictionary(msg)
+                    nmea_dict = self.add_to_nmea_dictionary(msg[msg_count])
                 except pynmea2.nmea.ParseError:
                     msg_count = msg_count + 1
                     continue
 
 
-            return msg
+            return nmea_dict
 
         return None
 
