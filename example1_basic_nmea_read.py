@@ -55,10 +55,10 @@ def run_example():
 
     while True:
 
-        data = qwiicGPS.check_ublox()
-        if data is not None: 
-            for i in range(len(data)):
-                print(data[i])
+        data = qwiicGPS.get_nmea_parsed()
+        if data is not None:
+            for sentence in data: 
+                print(sentence)
 
 if __name__ == '__main__':
     try:

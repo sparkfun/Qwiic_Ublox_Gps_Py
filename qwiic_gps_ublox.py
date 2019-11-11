@@ -242,6 +242,7 @@ class QwiicGpsUblox(object):
     rtcm_length = 0
     word = " "
     package_nmea = False
+    new_sentence_flag = True
 
     # Dictionaries that hold packets to send to GPS unit
     ublox_packet_cfg = {
@@ -729,36 +730,73 @@ class QwiicGpsUblox(object):
         data = chr(incoming_data)
 
         # pynmea2 takes full sentences so we're building them here.
-        self.word = self.word + data
-        if data == '\n':
+        if data == '$' and self.new_sentence_flag is True:
+            self.new_sentence_flag = False
+            self.word = data
+            return None
+
+        elif data == '$' and self.new_sentence_flag is False:
+            self.new_sentence_flag = True
             complete_sentence = self.word
-            self.word = ""
+            self.word = data
+            # Removing new line characters so that we can use print correctly.
+            if '\n' in complete_sentence:
+                complete_sentence = complete_sentence.replace('\n','')
+
             return complete_sentence
 
-        return None
+        else: 
+            self.word = self.word + data
+            return None
 
+
+
+    def add_to_nmea_dictionary(self, sentence):
+        pass
+
+    def clean_nmea_list(self, raw_gnss_list):
+
+        good_sentence_count = 0
+        for sentence in raw_gnss_list:
+            if sentence is not None:
+                good_sentence_count = good_sentence_count + 1
+
+        clean_gnss_list = [None for i in range(good_sentence_count)]
+        count = 0
+        for sentence in raw_gnss_list:
+            if sentence is not None:
+                clean_gnss_list[count] = sentence
+                count = count + 1
+
+        return clean_gnss_list
 
     def get_nmea_raw(self):
 
         data = self.check_ublox()
-        if data is not None: 
-            print(data)
+        if data is not None:
             return data
-        else:
-            return None
+
+        return None
 
     def get_nmea_parsed(self):
-            
+
         data = self.get_nmea_raw()
         if data is not None:
-            msg = [0 for i in len(data)]
-            for sentence, index in enumerate(data):
-                msg[index] = pynmea2.parse(sentence)
-             
+            msg = [None for i in range(len(data))]
+            msg_count = 0
+            for sentence in data:
+                try:
+                    msg[msg_count] = pynmea2.parse(sentence)
+                    msg_count = msg_count + 1
+                    self.add_to_nmea_dictionary(msg)
+                except pynmea2.nmea.ParseError:
+                    msg_count = msg_count + 1
+                    continue
+
+
             return msg
 
-        else:
-            return None
+        return None
 
 
     def check_ublox(self):
@@ -818,11 +856,11 @@ class QwiicGpsUblox(object):
             elif bytes_avail > 100:
 
                 self.debug_print("Data available.")
-                gnss_sentences = [0 for i in range(bytes_avail)]
+                gnss_sentences = [None for i in range(bytes_avail)]
 
                 while bytes_avail >= 0:
                     bytes_to_read = bytes_avail
-                    
+
 
                     if bytes_to_read > self.I2C_BUFFER_LENGTH:
                         bytes_to_read = self.I2C_BUFFER_LENGTH
@@ -835,7 +873,7 @@ class QwiicGpsUblox(object):
                     # consistent with the amount of clock stretching done by
                     # the ublox module.
                     except OSError:
-                        break 
+                        break
 
                     for index, gnss_data in enumerate(incoming):
                         # Rare edge case - needs to continue back at top:
@@ -855,11 +893,12 @@ class QwiicGpsUblox(object):
 
                     # Our end condition.
                     bytes_avail = bytes_avail - bytes_to_read
-            
-                return gnss_sentences
+
+                cleaned_list = self.clean_nmea_list(gnss_sentences)
+                return cleaned_list
         else:
             return None
-                
+
 
     def set_i2c_address(self, device_address, max_wait):
         """
