@@ -99,10 +99,10 @@ cd dist
 pip install sparkfun_qwiic_qwiib_ublox_gps-<version>.tar.gz
   
 ```
-```python
 Example Use
- ---------------
+---------------
 
+```python
 from __future__ import print_function
 import qwiic_gps_ublox
 import time
@@ -139,6 +139,6 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, SystemExit) as exErr:
         print("Ending Basic Example.")
         sys.exit(0)
+ ```
 
 See the examples directory for more detailed use examples.
- ```
