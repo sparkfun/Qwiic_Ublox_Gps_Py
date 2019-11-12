@@ -842,7 +842,7 @@ class QwiicGpsUblox(object):
         """
         data = self.get_raw_nmea()
         msg = []
-        if data is not None:
+        if data is not False :
             for sentence in data:
                 try:
                     # Build list 
