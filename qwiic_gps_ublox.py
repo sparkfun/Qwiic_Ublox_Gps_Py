@@ -337,17 +337,17 @@ class QwiicGpsUblox(object):
 
     parsed_gnss_messages = {
 
-        'Latitude'       : 0.0,
-        'Lat_Direction'  : " ",
+        'Latitude'       : 0.0,     
+        'Lat_Direction'  : "",
         'Longitude'      : 0.0,
-        'Long_Direction' : " ",
+        'Long_Direction' : "",
         'Altitude'       : 0.0,
-        'Altitude_Units' : " ",
-        'Sat_Number'     : 0,
-        'Geo_Seperation' : 0.0,
-        'Geo_Sep_Units'  : 0.0,
-        'Data_Age'       : 0,
-        'Ref_Station_ID' : 0
+        'Altitude_Units' : "",
+        'Sat_Number'     : "",
+        'Geo_Separation' : "",
+        'Geo_Sep_Units'  : "",
+        'Data_Age'       : "",
+        'Ref_Station_ID' : ""
     }
 
     # Lists of various settings:
@@ -753,29 +753,66 @@ class QwiicGpsUblox(object):
 
     def add_to_nmea_dictionary(self, sentence):
 
-        self.parsed_gnss_messages['Latitude'] = sentence.lat
-        self.parsed_gnss_messages['Lat_Direction'] = sentence.lat_dir
-        self.parsed_gnss_messages['Longitude'] = sentence.long
-        self.parsed_gnss_messages['Long_Direction'] = sentence.long_dir
-        self.parsed_gnss_messages['Altitude'] = sentence.altitude
-        self.parsed_gnss_messages['Altitude_Units'] = sentence.altitude_units
-        self.parsed_gnss_messages['Sat_Number'] = sentence.num_sats
-        self.parsed_gnss_messages['Geo_Seperation'] = sentence.geo_sep
-        self.parsed_gnss_messages['Geo_Sep_Units'] = sentence.geo_sep_units
-        self.parsed_gnss_messages['Data_Age'] = sentence.age_gps_data
-        self.parsed_gnss_messages['Ref_Station_ID'] = sentence.ref_station_id
+        if sentence is not None: 
+            try: 
+                self.parsed_gnss_messages['Latitude'] = sentence.lat
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Lat_Direction'] = sentence.lat_dir
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Longitude'] = sentence.lon
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Long_Direction'] = sentence.lon_dir
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Altitude'] = sentence.altitude
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Altitude_Units'] = sentence.altitude_units
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Sat_Number'] = sentence.num_sats
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Geo_Separation'] = sentence.geo_sep
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Geo_Sep_Units'] = sentence.geo_sep_units
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Data_Age'] = sentence.age_gps_data
+            except:
+                pass
+            try:
+                self.parsed_gnss_messages['Ref_Station_ID'] = sentence.ref_station_id
+            except:
+                pass
+            return True
+
+        return None
 
     def clean_nmea_list(self, raw_gnss_list):
 
         good_sentence_count = 0
         for sentence in raw_gnss_list:
-            if sentence is not None:
+            if sentence is not None and sentence.startswith('$'):
                 good_sentence_count = good_sentence_count + 1
 
         clean_gnss_list = [None for i in range(good_sentence_count)]
         count = 0
         for sentence in raw_gnss_list:
-            if sentence is not None:
+            if sentence is not None and sentence.startswith('$'):
                 clean_gnss_list[count] = sentence
                 count = count + 1
 
@@ -791,6 +828,7 @@ class QwiicGpsUblox(object):
 
     def get_nmea_parsed(self):
 
+        nmea_dict = {}
         data = self.get_nmea_raw()
         if data is not None:
             msg = [None for i in range(len(data))]
@@ -798,10 +836,9 @@ class QwiicGpsUblox(object):
             for sentence in data:
                 try:
                     msg[msg_count] = pynmea2.parse(sentence)
-                    msg_count = msg_count + 1
                     nmea_dict = self.add_to_nmea_dictionary(msg[msg_count])
-                except pynmea2.nmea.ParseError:
                     msg_count = msg_count + 1
+                except pynmea2.nmea.ParseError:
                     continue
 
 

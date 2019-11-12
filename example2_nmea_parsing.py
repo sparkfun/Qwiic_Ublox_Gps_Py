@@ -56,8 +56,11 @@ def run_example():
 
     while True:
 
-        print(qwiicGPS.check_ublox())
-        time.sleep(.200)
+        data_status = qwiicGPS.get_nmea_parsed()
+        if data_status is True:
+            print("Latitude: {}, Longitude: {}. ".format(
+                    qwiicGPS.parsed_gnss_messages['Latitude'], 
+                    qwiicGPS.parsed_gnss_messages['Longitude']))
 
 if __name__ == '__main__':
     try:
