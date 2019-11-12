@@ -56,8 +56,8 @@ def run_example():
     while True:
 
         # This will return raw GNSS setences. 
-        data = qwiicGPS.get_nmea_raw()
-        if data is not None:
+        data = qwiicGPS.get_raw_nmea()
+        if data is not False:
             for sentence in data:
                 print(sentence)
 

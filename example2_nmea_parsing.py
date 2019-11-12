@@ -52,15 +52,19 @@ def run_example():
         return
     
     qwiicGPS.begin()
-    qwiicGPS.enable_nmea_package()
 
     while True:
 
-        data_status = qwiicGPS.get_nmea_parsed()
+        # Check if there's data, on 'True', check the gnss_messages dictionary.
+        data_status = qwiicGPS.get_parsed_nmea()
         if data_status is True:
             print("Latitude: {}, Longitude: {}. ".format(
-                    qwiicGPS.parsed_gnss_messages['Latitude'], 
-                    qwiicGPS.parsed_gnss_messages['Longitude']))
+                    qwiicGPS.gnss_messages['Latitude'], 
+                    qwiicGPS.gnss_messages['Longitude']))
+
+            print("Altitude: {}, Number of Satellites: {}. ".format(
+                    qwiicGPS.gnss_messages['Altitude'], 
+                    qwiicGPS.gnss_messages['Sat_Number']))
 
 if __name__ == '__main__':
     try:

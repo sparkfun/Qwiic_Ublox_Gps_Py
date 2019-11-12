@@ -335,7 +335,7 @@ class QwiicGpsUblox(object):
         'ref_obs_miss'     : False
     }
 
-    parsed_gnss_messages = {
+    gnss_messages = {
 
         'Latitude'       : 0.0,     
         'Lat_Direction'  : "",
@@ -549,16 +549,6 @@ class QwiicGpsUblox(object):
         self._print_debug = False
         print("Debugging disabled.")
 
-    def enable_nmea_package(self):
-        """
-            This function enables packaging GNSS data stream for NMEA
-            library. Othewise the datastream is coming in a character at a time
-            and printed out to command line.
-            :returns: Nothing
-        """
-        self.package_nmea = True
-        print("GNSS sentences are ready for NMEA.")
-
     def disable_nmea_package(self):
         """
             This function disables packaging GNSS data stream for NMEA
@@ -722,7 +712,7 @@ class QwiicGpsUblox(object):
 
     def process_NMEA(self, incoming_data):
         """
-            This function prints out streaming NMEA sentences
+            This function builds and prints out streaming NMEA sentences
             received from the ublox module.
             :return: No return value.
         """
@@ -739,7 +729,8 @@ class QwiicGpsUblox(object):
             self.new_sentence_flag = True
             complete_sentence = self.word
             self.word = data
-            # Removing new line characters so that we can use print correctly.
+            # Removing new line characters so that we can that the user can use 
+            # print in a more simple way..
             if '\n' in complete_sentence:
                 complete_sentence = complete_sentence.replace('\n','')
 
@@ -752,99 +743,120 @@ class QwiicGpsUblox(object):
 
 
     def add_to_nmea_dictionary(self, sentence):
+        """
+            This function adds relevant information to their respective
+            NMEA dictionary locations.
+            :returns: Returns True on addition and False otherwise
+            :rtype: Boolean
+        """
 
         if sentence is not None: 
+            # Not every sentence has the information you need - so we'll fill
+            # in what is relevant and pass on what is not. 
             try: 
-                self.parsed_gnss_messages['Latitude'] = sentence.lat
+                self.gnss_messages['Latitude'] = sentence.lat
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Lat_Direction'] = sentence.lat_dir
+                self.gnss_messages['Lat_Direction'] = sentence.lat_dir
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Longitude'] = sentence.lon
+                self.gnss_messages['Longitude'] = sentence.lon
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Long_Direction'] = sentence.lon_dir
+                self.gnss_messages['Long_Direction'] = sentence.lon_dir
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Altitude'] = sentence.altitude
+                self.gnss_messages['Altitude'] = sentence.altitude
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Altitude_Units'] = sentence.altitude_units
+                self.gnss_messages['Altitude_Units'] = sentence.altitude_units
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Sat_Number'] = sentence.num_sats
+                self.gnss_messages['Sat_Number'] = sentence.num_sats
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Geo_Separation'] = sentence.geo_sep
+                self.gnss_messages['Geo_Separation'] = sentence.geo_sep
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Geo_Sep_Units'] = sentence.geo_sep_units
+                self.gnss_messages['Geo_Sep_Units'] = sentence.geo_sep_units
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Data_Age'] = sentence.age_gps_data
+                self.gnss_messages['Data_Age'] = sentence.age_gps_data
             except:
                 pass
             try:
-                self.parsed_gnss_messages['Ref_Station_ID'] = sentence.ref_station_id
+                self.gnss_messages['Ref_Station_ID'] = sentence.ref_station_id
             except:
                 pass
             return True
 
-        return None
+        return False
 
     def clean_nmea_list(self, raw_gnss_list):
+        """
+            This function parses raw NMEA data for incomplete sentences or any
+            other corruption to the data and generates a new list from that
+            data which only contains correct data.
+            :return: Returns a procured list of NMEA messages
+            :rtype: List
+        """
 
-        good_sentence_count = 0
+        # Check that there are proper sentences.  
+        clean_gnss_list = []
         for sentence in raw_gnss_list:
-            if sentence is not None and sentence.startswith('$'):
-                good_sentence_count = good_sentence_count + 1
-
-        clean_gnss_list = [None for i in range(good_sentence_count)]
-        count = 0
-        for sentence in raw_gnss_list:
-            if sentence is not None and sentence.startswith('$'):
-                clean_gnss_list[count] = sentence
-                count = count + 1
+            if sentence.startswith('$'):
+                clean_gnss_list.append(sentence)
 
         return clean_gnss_list
 
-    def get_nmea_raw(self):
-
+    def get_raw_nmea(self):
+        """
+            This function gets NMEA messages returned from the u-blox
+            module.
+            :return: Returns a list of NMEA messages or False otherwise
+            :rtype: list or boolean
+        """
         data = self.check_ublox()
         if data is not None:
-            return data
+            # Remove anything that was corrupted in transit. 
+            cleaned_data = self.clean_nmea_list(data)
+            return cleaned_data
 
-        return None
+        return False
 
-    def get_nmea_parsed(self):
-
-        nmea_dict = {}
-        data = self.get_nmea_raw()
+    def get_parsed_nmea(self):
+        """
+            This function parses lists of NMEA setences using the pynmea2
+            library.
+            :return: True on successful parsing and False otherwise
+            :rtype: boolean
+        """
+        data = self.get_raw_nmea()
+        msg = []
         if data is not None:
-            msg = [None for i in range(len(data))]
-            msg_count = 0
             for sentence in data:
                 try:
-                    msg[msg_count] = pynmea2.parse(sentence)
-                    nmea_dict = self.add_to_nmea_dictionary(msg[msg_count])
-                    msg_count = msg_count + 1
+                    # Build list 
+                    msg.append(pynmea2.parse(sentence))
                 except pynmea2.nmea.ParseError:
                     continue
 
-
-            return nmea_dict
-
-        return None
+            for message in msg:
+                # Pass pynmea2 data strings to build dictionary
+                added_to_dict = self.add_to_nmea_dictionary(message)
+                if added_to_dict is not False:
+                    return True
+            
+        return False
 
 
     def check_ublox(self):
@@ -872,7 +884,6 @@ class QwiicGpsUblox(object):
         """
 
         edge_case = False
-        sen_count = 0
         # We only want to poll every 100ms as per the datasheet.
         if (time.monotonic() - self.last_checked) >= self.i2c_polling_wait:
 
@@ -904,7 +915,7 @@ class QwiicGpsUblox(object):
             elif bytes_avail > 100:
 
                 self.debug_print("Data available.")
-                gnss_sentences = [None for i in range(bytes_avail)]
+                gnss_sentences = []
 
                 while bytes_avail >= 0:
                     bytes_to_read = bytes_avail
@@ -935,9 +946,10 @@ class QwiicGpsUblox(object):
                             return None
 
                         data = self.process(gnss_data)
+                        # This will not be "None" when the sentence is
+                        # contructued. 
                         if data is not None:
-                            gnss_sentences[sen_count] = data
-                            sen_count = sen_count + 1
+                            gnss_sentences.append(data)
 
                     # Our end condition.
                     bytes_avail = bytes_avail - bytes_to_read
