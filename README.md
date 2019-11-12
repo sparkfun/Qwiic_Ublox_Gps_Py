@@ -99,6 +99,7 @@ cd dist
 pip install sparkfun_qwiic_qwiib_ublox_gps-<version>.tar.gz
   
 ```
+```python
 Example Use
  ---------------
 
@@ -140,3 +141,4 @@ if __name__ == '__main__':
         sys.exit(0)
 
 See the examples directory for more detailed use examples.
+ ```
