@@ -37,14 +37,14 @@
 #
 
 from __future__ import print_function
-import qwiic_gps_ublox
+import qwiic_ublox_gps
 import time
 import sys
 
 def run_example():
 
     print("SparkFun u-blox GPS!")
-    qwiicGPS = qwiic_gps_ublox.QwiicGpsUblox()
+    qwiicGPS = qwiic_ublox_gps.QwiicUbloxGps()
 
     if qwiicGPS.connected == False:
         print("Could not connect to to the SparkFun GPS Unit. Double check that\

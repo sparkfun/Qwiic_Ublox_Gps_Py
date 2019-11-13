@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# qwiic_gps_ublox.py
+# qwiic_ublox_gps.py
 #
 # Python library for the SparkFun's line of u-Blox GPS units.
 #
@@ -51,7 +51,7 @@
 #
 
 """
-qwiic_gps_ublox
+qwiic_ublox_gps
 ============
  Python library for the SparkFun's line of u-Blox GPS units: [SparkFun GPS-RTK2\
  ZED-F9P](https://www.sparkfun.com/products/15136), [SparkFun GPS-RTK2\
@@ -160,7 +160,7 @@ def _checkForRPiI2CClockStretch():
     dtparam=i2c_arm_baudrate=10000
 
  For more information, see the note at:
-          https://github.com/sparkfun/qwiic_gps_ublox
+          https://github.com/sparkfun/qwiic_ublox_gps_py
 ============================================================================
         """)
 
@@ -170,22 +170,22 @@ def _checkForRPiI2CClockStretch():
 # runtine
 #
 # The name of this device
-_DEFAULT_NAME = "Qwiic GPS u-blox"
+_DEFAULT_NAME = "Qwiic u-blox GPS"
 
 # Some devices have multiple availabel addresses - this is a list of these addresses.
 # NOTE: The first address in this list is considered the default I2C address for the
 # device.
 _AVAILABLE_I2C_ADDRESS = [0x42]
 
-class QwiicGpsUblox(object):
+class QwiicUbloxGps(object):
     """
-    QwiicGpsUblox
+    QwiicUbloxGps
 
         :param address: The I2C address to use for the device.
                         If not provided, the default address is used.
         :param i2c_driver: An existing i2c driver object. If not provided
                         a driver object is created.
-        :return: The gpsUblox device object.
+        :return: The ublox_gps device object.
         :rtype: Object
     """
     # Constructor
@@ -343,11 +343,11 @@ class QwiicGpsUblox(object):
         'Long_Direction' : "",
         'Altitude'       : 0.0,
         'Altitude_Units' : "",
-        'Sat_Number'     : "",
-        'Geo_Separation' : "",
+        'Sat_Number'     : 0,
+        'Geo_Separation' : 0,
         'Geo_Sep_Units'  : "",
-        'Data_Age'       : "",
-        'Ref_Station_ID' : ""
+        'Data_Age'       : 0,
+        'Ref_Station_ID' : 0
     }
 
     # Lists of various settings:
@@ -481,9 +481,9 @@ class QwiicGpsUblox(object):
         #
         # Lets check if it's enabled. This is done only once in
         # the session
-        if not QwiicGpsUblox._RPiCheck:
+        if not QwiicUbloxGps._RPiCheck:
             _checkForRPiI2CClockStretch()
-            QwiicGpsUblox._RPiCheck = True
+            QwiicUbloxGps._RPiCheck = True
 
         # Did the user specify an I2C address?
 
@@ -727,13 +727,12 @@ class QwiicGpsUblox(object):
 
         elif data == '$' and self.new_sentence_flag is False:
             self.new_sentence_flag = True
-            complete_sentence = self.word
-            self.word = data
+            complete_sentence = self.word # Save full sentence before we begin anew
+            self.word = data # Start new sentence with current character    
             # Removing new line characters so that we can that the user can use 
-            # print in a more simple way..
+            # print in a more simple way.
             if '\n' in complete_sentence:
                 complete_sentence = complete_sentence.replace('\n','')
-
             return complete_sentence
 
         else: 
