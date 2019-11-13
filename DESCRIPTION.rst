@@ -1,4 +1,4 @@
-Qwiic CCS811 Sensor
+Qwiic Ublox GPS Py 
 ==========================
 
-This package provdes support for the SparkFun qwiic CCS811 sensor breakout.
+This package provdes functionality for u-blox based GPS modules. 
