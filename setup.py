@@ -46,18 +46,18 @@ with io.open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
 
 setup(
 
-    name='sparkfun_qwiic_gps_ublox',
+    name='sparkfun_qwiic_ublox_gps',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # http://packaging.python.org/en/latest/tutorial.html#version
     version='0.9.4',
 
-    description='SparkFun Electronics qwiic gps Ublox',
+    description='SparkFun Electronics Python Package for u-blox GPS modules.',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://www.sparkfun.com/gps', #Temp place holder
+    url='https://www.sparkfun.com/gps', 
 
     # Author details
     author='SparkFun Electronics',
@@ -98,6 +98,6 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    py_modules=["qwiic_gps_ublox"],
+    py_modules=["qwiic_ublox_gps"],
 
 )
