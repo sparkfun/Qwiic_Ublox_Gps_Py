@@ -1,5 +1,0 @@
-python:
-   version: 3
-   install:
-      - requirements: docs/requirements.txt
-   setup_py_install: true
