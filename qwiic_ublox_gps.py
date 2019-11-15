@@ -812,7 +812,7 @@ class QwiicUbloxGps(object):
         # Check that there are proper sentences.  
         clean_gnss_list = []
         for sentence in raw_gnss_list:
-            if sentence.startswith('$'):
+            if sentence.startswith('$') and chr(255) not in sentence:
                 clean_gnss_list.append(sentence)
 
         return clean_gnss_list
