@@ -753,7 +753,7 @@ class QwiicUbloxGps(object):
             # Not every sentence has the information you need - so we'll fill
             # in what is relevant and pass on what is not. 
             try: 
-                self.gnss_messages['Latitude'] = sentence.lat
+                self.gnss_messages['Latitude'] = sentence.lat/100
             except:
                 pass
             try:
@@ -761,7 +761,7 @@ class QwiicUbloxGps(object):
             except:
                 pass
             try:
-                self.gnss_messages['Longitude'] = sentence.lon
+                self.gnss_messages['Longitude'] = sentence.lon/100
             except:
                 pass
             try:
@@ -813,6 +813,7 @@ class QwiicUbloxGps(object):
         clean_gnss_list = []
         for sentence in raw_gnss_list:
             if sentence.startswith('$') and chr(255) not in sentence:
+                sentence.replace(' ','')
                 clean_gnss_list.append(sentence)
 
         return clean_gnss_list
