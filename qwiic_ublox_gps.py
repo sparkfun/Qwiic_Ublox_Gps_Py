@@ -948,7 +948,7 @@ class QwiicUbloxGps(object):
                     # consistent with the amount of clock stretching done by
                     # the ublox module.
                     except OSError:
-                        if error_count >= 10:
+                        if error_count >= 20:
                             break
                         time.sleep(0.005)
                         error_count = error_count + 1
@@ -1031,7 +1031,7 @@ class QwiicUbloxGps(object):
 
         while time.monotonic() - start_time < max_time:
 
-            if not None in self.check_ublox():
+            if self.check_ublox() is not None:
                 if self.command_ack is True:
                     return True
                 if self.ublox_packet_cfg['Valid'] is True:
@@ -1058,12 +1058,12 @@ class QwiicUbloxGps(object):
             otherwise
             :rtype: Boolean
         """
-        self._i2c.writeByte(self.address, self.UBX_SYNCH_1)
-        self._i2c.writeByte(self.address, self.UBX_SYNCH_2)
-        self._i2c.writeByte(self.address, outgoing_ubx_packet['Class'])
-        self._i2c.writeByte(self.address, outgoing_ubx_packet['ID'])
-        self._i2c.writeByte(self.address, outgoing_ubx_packet['Length'] & 0xFF)
-        self._i2c.writeByte(self.address, outgoing_ubx_packet['Length'] >> 8)
+        self._i2c.writeByte(self.address, 0xFF, self.UBX_SYNCH_1)
+        self._i2c.writeByte(self.address, 0xFF, self.UBX_SYNCH_2)
+        self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Class'])
+        self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['ID'])
+        self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Length'] & 0xFF)
+        self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Length'] >> 8)
 
         bytes_to_send = outgoing_ubx_packet['Length']
         start_index = 0
@@ -1076,16 +1076,16 @@ class QwiicUbloxGps(object):
 
             for i in len(length):
 
-                self._i2c.writeByte(self.address,
+                self._i2c.writeByte(self.address, 0xFF,
                                     outgoing_ubx_packet['Payload'][start_index + i])
 
                 start_index = start_index + length
                 bytes_to_send = bytes_to_send - length
 
         if bytes_to_send is 1:
-            self._i2c.writeByte(self.address, outgoing_ubx_packet['Payload'][1])
-            self._i2c.writeByte(self.address, outgoing_ubx_packet['Checksum_A'])
-            self._i2c.writeByte(self.address, outgoing_ubx_packet['Checksum_B'])
+            self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Payload'][1])
+            self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Checksum_A'])
+            self._i2c.writeByte(self.address, 0xFF, outgoing_ubx_packet['Checksum_B'])
 
         return True
 
@@ -1907,3 +1907,27 @@ class QwiicUbloxGps(object):
         self.send_command(self.ublox_packet_cfg, 0)
         self.hard_reset()
 
+    def set_navigation_frequency(self, freq, max_wait = MAX_TIME_MED):
+        """
+            Set the rate at which the module will give us an updated navigation
+            solution. Parameter expects updates per second: 1 = 1Hz, 2 = 2Hz,
+            etc.
+            :returns: True upon success and False otherwise
+            :rtype: bool
+        """
+        self.i2c_polling_wait = 1000/(freq * 4)
+
+        self.ublox_packet_cfg['Class'] = self.UBX_CLASS_CFG
+        self.ublox_packet_cfg['ID'] = self.UBX_CFG_CFG
+        self.ublox_packet_cfg['Length'] = 0
+        self.ublox_packet_cfg['Start'] = 0
+
+        if send_command(self.ublox_packet_cfg, max_wait) is False:
+            return False
+
+        measurement_rate = 1000/freq
+
+        self.ublox_packet_cfg['Payload'][0] = measurement_rate & 0xFF
+        self.ublox_packet_cfg['Payload'][1] = measurement_rate >> 8
+
+        return send_command(self.ublox_packet_cfg, max_wait)
