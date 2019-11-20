@@ -337,9 +337,12 @@ class QwiicUbloxGps(object):
 
     gnss_messages = {
 
-        'Latitude'       : 0.0,     
+        'Time'           : 0,
+        'Latitude'       : 0.0,
+        'Lat'            : 0.0,
         'Lat_Direction'  : "",
         'Longitude'      : 0.0,
+        'Lon'            : 0.0,
         'Long_Direction' : "",
         'Altitude'       : 0.0,
         'Altitude_Units' : "",
@@ -752,12 +755,22 @@ class QwiicUbloxGps(object):
         if sentence is not None: 
             # Not every sentence has the information you need - so we'll fill
             # in what is relevant and pass on what is not. 
+            try:
+                self.gnss_messages['Lat_Direction'] = sentence.lat_dir
+            except:
+                pass
+            try:
+                self.gnss_messages['Long_Direction'] = sentence.lon_dir
+            except:
+                pass
             try: 
                 self.gnss_messages['Latitude'] = sentence.latitude
             except:
                 pass
-            try:
-                self.gnss_messages['Lat_Direction'] = sentence.lat_dir
+            try: 
+                self.gnss_messages['Lat'] = sentence.lat * .01
+                if self.gnss_messages['Lat_Direction'] == 'S':
+                    self.gnss_messages['Lat'] = -(self.gnss_messages['Lat'])
             except:
                 pass
             try:
@@ -765,7 +778,9 @@ class QwiicUbloxGps(object):
             except:
                 pass
             try:
-                self.gnss_messages['Long_Direction'] = sentence.lon_dir
+                self.gnss_messages['Long'] = sentence.longitude * .01
+                if self.gnss_messages['Long_Direction'] == 'W':
+                    self.gnss_messages['Long'] = -(self.gnss_messages['Long'])
             except:
                 pass
             try:

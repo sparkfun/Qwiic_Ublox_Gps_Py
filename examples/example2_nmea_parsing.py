@@ -58,13 +58,10 @@ def run_example():
         # Check if there's data, on 'True', check the gnss_messages dictionary.
         data_status = qwiicGPS.get_parsed_nmea()
         if data_status is True:
-            print("Latitude: {}, Longitude: {}. ".format(
-                qwiicGPS.gnss_messages['Latitude'], 
-                qwiicGPS.gnss_messages['Longitude']))
-
-            print("Altitude: {}, Number of Satellites: {}. ".format(
-                qwiicGPS.gnss_messages['Altitude'], 
-                qwiicGPS.gnss_messages['Sat_Number']))
+            print("Latitude: {}, Longitude: {} \n Time: {}".format(
+                qwiicGPS.gnss_messages['Lat'], 
+                qwiicGPS.gnss_messages['Long']))
+                qwiicGPS.gnss_messages['Time']))
 
 if __name__ == '__main__':
     try:
