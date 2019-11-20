@@ -60,7 +60,7 @@ def run_example():
         if data_status is True:
             print("Latitude: {}, Longitude: {} \n Time: {}".format(
                 qwiicGPS.gnss_messages['Lat'], 
-                qwiicGPS.gnss_messages['Long']))
+                qwiicGPS.gnss_messages['Long'], 
                 qwiicGPS.gnss_messages['Time']))
 
 if __name__ == '__main__':

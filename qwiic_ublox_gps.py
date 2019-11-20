@@ -342,7 +342,7 @@ class QwiicUbloxGps(object):
         'Lat'            : 0.0,
         'Lat_Direction'  : "",
         'Longitude'      : 0.0,
-        'Lon'            : 0.0,
+        'Long'            : 0.0,
         'Long_Direction' : "",
         'Altitude'       : 0.0,
         'Altitude_Units' : "",
@@ -929,6 +929,7 @@ class QwiicUbloxGps(object):
 
             elif bytes_avail > 100:
 
+                error_count = 0
                 self.debug_print("Data available.")
                 gnss_sentences = []
 
@@ -947,7 +948,11 @@ class QwiicUbloxGps(object):
                     # consistent with the amount of clock stretching done by
                     # the ublox module.
                     except OSError:
-                        break
+                        if error_count >= 10:
+                            break
+                        time.sleep(0.005)
+                        error_count = error_count + 1
+                        continue
 
                     for index, gnss_data in enumerate(incoming):
                         # Rare edge case - needs to continue back at top:
