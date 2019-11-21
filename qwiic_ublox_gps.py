@@ -719,28 +719,29 @@ class QwiicUbloxGps(object):
             received from the ublox module.
             :return: No return value.
         """
-        complete_sentence = ""
-        data = chr(incoming_data)
+        #complete_sentence = ""
+        data = chr(incoming_data) 
+        return data
 
-        # pynmea2 takes full sentences so we're building them here.
-        if data == '$' and self.new_sentence_flag is True:
-            self.new_sentence_flag = False
-            self.word = data
-            return None
+   #     # pynmea2 takes full sentences so we're building them here.
+   #     if data == '$' and self.new_sentence_flag is True:
+   #         self.new_sentence_flag = False
+   #         self.word = data
+   #         return None
 
-        elif data == '$' and self.new_sentence_flag is False:
-            self.new_sentence_flag = True
-            complete_sentence = self.word # Save full sentence before we begin anew
-            self.word = data # Start new sentence with current character    
-            # Removing new line characters so that we can that the user can use 
-            # print in a more simple way.
-            if '\n' in complete_sentence:
-                complete_sentence = complete_sentence.replace('\n','')
-            return complete_sentence
+   #     elif data == '$' and self.new_sentence_flag is False:
+   #         self.new_sentence_flag = True
+   #         complete_sentence = self.word # Save full sentence before we begin anew
+   #         self.word = data # Start new sentence with current character
+   #         # Removing new line characters so that the user can use
+   #         # print in a more simple way.
+   #         if '\n' in complete_sentence:
+   #             complete_sentence = complete_sentence.replace('\n','')
+   #         return complete_sentence
 
-        else: 
-            self.word = self.word + data
-            return None
+   #     else:
+   #         self.word = self.word + data
+   #         return None
 
 
 
@@ -752,9 +753,9 @@ class QwiicUbloxGps(object):
             :rtype: Boolean
         """
 
-        if sentence is not None: 
+        if sentence is not None:
             # Not every sentence has the information you need - so we'll fill
-            # in what is relevant and pass on what is not. 
+            # in what is relevant and pass on what is not.
             try:
                 self.gnss_messages['Time'] = sentence.lat_dir
             except:
@@ -767,11 +768,11 @@ class QwiicUbloxGps(object):
                 self.gnss_messages['Long_Direction'] = sentence.lon_dir
             except:
                 pass
-            try: 
+            try:
                 self.gnss_messages['Latitude'] = sentence.latitude
             except:
                 pass
-            try: 
+            try:
                 self.gnss_messages['Lat'] = sentence.lat * .01
                 if self.gnss_messages['Lat_Direction'] == 'S':
                     self.gnss_messages['Lat'] = -(self.gnss_messages['Lat'])
@@ -819,7 +820,7 @@ class QwiicUbloxGps(object):
 
         return False
 
-    def clean_nmea_list(self, raw_gnss_list):
+    def clean_nmea_list(self, raw_gnss):
         """
             This function parses raw NMEA data for incomplete sentences or any
             other corruption to the data and generates a new list from that
@@ -828,12 +829,11 @@ class QwiicUbloxGps(object):
             :rtype: List
         """
 
-        # Check that there are proper sentences.  
+        # Check that there are proper sentences.
         clean_gnss_list = []
-        for sentence in raw_gnss_list:
-            if sentence.startswith('$'): 
-                clean_gnss_list.append(sentence)
-
+        sentences = raw_gnss.split('\n')
+        for sentence in sentences:
+            clean_gnss_list.append(sentence)
         return clean_gnss_list
 
     def get_raw_nmea(self):
@@ -845,9 +845,7 @@ class QwiicUbloxGps(object):
         """
         data = self.check_ublox()
         if data is not None:
-            # Remove anything that was corrupted in transit. 
-            cleaned_data = self.clean_nmea_list(data)
-            return cleaned_data
+            return data
 
         return False
 
@@ -858,22 +856,27 @@ class QwiicUbloxGps(object):
             :return: True on successful parsing and False otherwise
             :rtype: boolean
         """
+        error_count = 0
         data = self.get_raw_nmea()
         msg = []
         if data is not False :
-            for sentence in data:
-                try:
-                    # Build list 
-                    msg.append(pynmea2.parse(sentence))
-                except pynmea2.nmea.ParseError:
-                    continue
+
+            while error_count <= 15:
+
+                for sentence in data:
+                    try:
+                        # Build list
+                        msg.append(pynmea2.parse(sentence))
+                    except pynmea2.nmea.ParseError:
+                        error_count = error_count + 1
+                        continue
 
             for message in msg:
                 # Pass pynmea2 data strings to build dictionary
                 added_to_dict = self.add_to_nmea_dictionary(message)
                 if added_to_dict is not False:
                     return True
-            
+
         return False
 
 
@@ -922,7 +925,6 @@ class QwiicUbloxGps(object):
 
             elif bytes_avail ==  0:
                 self.debug_print("Zero bytes available.")
-                self.last_checked = time.monotonic()
                 return None
 
             # Something has gone wrong here, checking register again.
@@ -934,15 +936,14 @@ class QwiicUbloxGps(object):
 
                 error_count = 0
                 self.debug_print("Data available.")
-                gnss_sentences = []
+                gnss_sentences = ""
 
                 # Why are we doing this? Clock stretching on a Raspberry pi as of December, 2019
-                # is still not supported. 
-                while error_count <= 20: 
-                        
+                # is still not supported.
+                while error_count <= 50:
+
                     while bytes_avail >= 0:
                         bytes_to_read = bytes_avail
-
 
                         if bytes_to_read > self.I2C_BUFFER_LENGTH:
                             bytes_to_read = self.I2C_BUFFER_LENGTH
@@ -972,9 +973,9 @@ class QwiicUbloxGps(object):
 
                             data = self.process(gnss_data)
                             # This will not be "None" when the sentence is
-                            # contructued. 
+                            # contructued.
                             if data is not None:
-                                gnss_sentences.append(data)
+                                gnss_sentences = gnss_sentences + data
 
                         # Our end condition.
                         bytes_avail = bytes_avail - bytes_to_read
