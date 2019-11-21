@@ -756,6 +756,10 @@ class QwiicUbloxGps(object):
             # Not every sentence has the information you need - so we'll fill
             # in what is relevant and pass on what is not. 
             try:
+                self.gnss_messages['Time'] = sentence.lat_dir
+            except:
+                pass
+            try:
                 self.gnss_messages['Lat_Direction'] = sentence.lat_dir
             except:
                 pass
@@ -778,7 +782,7 @@ class QwiicUbloxGps(object):
             except:
                 pass
             try:
-                self.gnss_messages['Long'] = sentence.longitude * .01
+                self.gnss_messages['Long'] = sentence.lon * .01
                 if self.gnss_messages['Long_Direction'] == 'W':
                     self.gnss_messages['Long'] = -(self.gnss_messages['Long'])
             except:
@@ -827,8 +831,7 @@ class QwiicUbloxGps(object):
         # Check that there are proper sentences.  
         clean_gnss_list = []
         for sentence in raw_gnss_list:
-            if sentence.startswith('$') and chr(255) not in sentence:
-                sentence.replace(' ','')
+            if sentence.startswith('$'): 
                 clean_gnss_list.append(sentence)
 
         return clean_gnss_list
@@ -935,8 +938,8 @@ class QwiicUbloxGps(object):
 
                 # Why are we doing this? Clock stretching on a Raspberry pi as of December, 2019
                 # is still not supported. 
-                while error_count <= 20:
-
+                while error_count <= 20: 
+                        
                     while bytes_avail >= 0:
                         bytes_to_read = bytes_avail
 
