@@ -933,46 +933,48 @@ class QwiicUbloxGps(object):
                 self.debug_print("Data available.")
                 gnss_sentences = []
 
-                while bytes_avail >= 0:
-                    bytes_to_read = bytes_avail
+                # Why are we doing this? Clock stretching on a Raspberry pi as of December, 2019
+                # is still not supported. 
+                while error_count <= 20:
+
+                    while bytes_avail >= 0:
+                        bytes_to_read = bytes_avail
 
 
-                    if bytes_to_read > self.I2C_BUFFER_LENGTH:
-                        bytes_to_read = self.I2C_BUFFER_LENGTH
+                        if bytes_to_read > self.I2C_BUFFER_LENGTH:
+                            bytes_to_read = self.I2C_BUFFER_LENGTH
 
-                    try:
-                        incoming = self._i2c.readBlock(self.address,
-                                                       0xFF, bytes_to_read)
+                        try:
+                            incoming = self._i2c.readBlock(self.address,
+                                                           0xFF, bytes_to_read)
 
-                    # This is a broad class, but the clock stretching error is
-                    # consistent with the amount of clock stretching done by
-                    # the ublox module.
-                    except OSError:
-                        if error_count >= 20:
-                            break
-                        time.sleep(0.005)
-                        error_count = error_count + 1
-                        continue
-
-                    for index, gnss_data in enumerate(incoming):
-                        # Rare edge case - needs to continue back at top:
-                        if index == 0 and gnss_data == 0x7F:
-                            edge_case = True
-                            self.debug_print("Module not ready with data.")
+                        # This is a broad class, but the clock stretching error is
+                        # consistent with the amount of clock stretching done by
+                        # the ublox module.
+                        except OSError:
                             time.sleep(.005)
+                            error_count = error_count + 1
+                            break
 
-                        if edge_case is True:
-                            edge_case = False
-                            return None
+                        for index, gnss_data in enumerate(incoming):
+                            # Rare edge case - needs to continue back at top:
+                            if index == 0 and gnss_data == 0x7F:
+                                edge_case = True
+                                self.debug_print("Module not ready with data.")
+                                time.sleep(.005)
 
-                        data = self.process(gnss_data)
-                        # This will not be "None" when the sentence is
-                        # contructued. 
-                        if data is not None:
-                            gnss_sentences.append(data)
+                            if edge_case is True:
+                                edge_case = False
+                                return None
 
-                    # Our end condition.
-                    bytes_avail = bytes_avail - bytes_to_read
+                            data = self.process(gnss_data)
+                            # This will not be "None" when the sentence is
+                            # contructued. 
+                            if data is not None:
+                                gnss_sentences.append(data)
+
+                        # Our end condition.
+                        bytes_avail = bytes_avail - bytes_to_read
 
                 cleaned_list = self.clean_nmea_list(gnss_sentences)
                 return cleaned_list
