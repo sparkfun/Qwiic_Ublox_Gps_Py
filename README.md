@@ -36,6 +36,11 @@ Qwiic_Ublox_Gps_Py
 </table>
 
 This is a Python module for the SparkFun GPS products based on u-blox GPS modules.
+	
+## Library is not functional :warning:
+* Clock stretching on the Raspberry Pi is absolutely necessary for this library
+	to function. 
+* **Clock Stretching** is not yet implemented on the Raspbery Pi!!
 
 This package should be used in conjunction with the overall [SparkFun qwiic Python Package](https://github.com/sparkfun/Qwiic_Py). New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.sparkfun.com/qwiic).
 
