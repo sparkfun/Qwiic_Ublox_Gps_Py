@@ -502,8 +502,7 @@ class QwiicUbloxGps(object):
         else:
             self._i2c = i2c_driver
 
-    # ----------------------------------
-    # is_connected()
+    self.is_connected()
     #
     # Is an actual board connected to our system?
 
