@@ -50,6 +50,9 @@
 
 # ...and because I'm developing: 
 # pylint: disable-all
+import module_constants
+from time import sleep 
+
 def UbloxSpi(object):
 
     def __init__(self, port_settings):
@@ -72,17 +75,73 @@ def UbloxSpi(object):
 def UbloxSerial(object):
 
     def __init__(self, port_settings):
+        self.port_settings = port_settings
         pass
 
     def calc_fletch_checksum(self, packet):
-        # The length key is not used here. 
+
+        checksum_B = 0
+        checksum_A = packet.get(ubx_class)
+        checksum_A = checksum_A + packet.get(ubx_id)
+        checksum_A = checksum_A + packet.get(ubx_length)
+        checksum_B = checksum_A + checksum_B
+        for index,item in enumerate(packet.get(ubx_payload)):
+            checksum_A = checksum_A + item
+            checksum_B = checksum_B + checksum_A
+
+        packet["ubx_checkA"] = checksum_A 
+        packet["ubx_checkB"] = checksum_B 
+
         pass
 
     def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
-        pass
+
+        ubx_message = {
+            "ubx_class" : ubx_class,
+            "ubx_id" : ubx_id,
+            "ubx_length" : ubx_length,
+            "ubx_payload" : ubx_payload, #list of bytes
+            "ubx_checkA" : None,
+            "ubx_checkB" : None
+        }
+
+        packet = calc_fletch_checksum(ubx_message)
+
+        return packet
 
     def send_command(self, packet): 
-        pass
+
+        # Open some serial port
+        ser.write(UBX_SYNCH_1)
+        ser.write(UBX_SYNCH_2)
+        ser.write(packet["ubx_class"])
+        ser.write(packet["ubx_id"])
+        ser.write(packet["ubx_length"])
+
+        for index,p_item in packet["ubx_payload"].enumerate():
+            ser.write(p_item)
+
+        ser.write(packet["ubx_checkA"])
+        ser.write(packet["ubx_checkB"])
+
+        if packet["ubx_class"] == UBX_CLASS_CFG:
+            ser.read() 
+        
 
     def receive_command(self, packet): 
-        pass
+
+        ser.write(UBX_SYNCH_1)
+        ser.write(UBX_SYNCH_2)
+        ser.write(packet["ubx_class"])
+        ser.write(packet["ubx_id"])
+        ser.write(packet["ubx_length"])
+
+        for index,p_item in packet["ubx_payload"].enumerate():
+            ser.write(p_item)
+
+        ser.write(packet["ubx_checkA"])
+        ser.write(packet["ubx_checkB"])
+
+        sleep(.1) # 10ms wait
+
+        ser.read()

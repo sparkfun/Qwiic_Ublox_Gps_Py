@@ -48,6 +48,9 @@
 #
 
 # pylint: disable-all
+import ublox_comms
+import module_constants # Not sure I need this.
+
 def UbloxGps(object):
 
     def __init__(self, comm_interface):

@@ -36,30 +36,39 @@
 # Example 1
 #
 
+# pylint: disable-all
 from __future__ import print_function
-import qwiic_ublox_gps
+from serial import Serial
+import ublox_gps
 import time
 import sys
+
+ser_settings = {
+    port: '/dev/ttyUSB0',
+    baud: 9600,
+    timeout: 1
+}
 
 def run_example():
 
     print("SparkFun u-blox GPS!")
-    qwiicGPS = qwiic_ublox_gps.QwiicUbloxGps()
+    gps = UbloxGps(UbloxSerial())
 
-    if qwiicGPS.connected == False:
+    if gps.connected == False:
         print("Could not connect to to the SparkFun GPS Unit. Double check that\
               it's wired correctly.", file=sys.stderr)
         return
     
-    qwiicGPS.begin()
+    gps.begin()
 
-    while True:
+    with serial.Serial(ser_settings.port, ser_settings.baud,
+                       ser_settings.timeout) as ser:
+        while True:
 
-        # This will return raw GNSS setences. 
-        data = qwiicGPS.get_raw_nmea()
-        if data is not False:
-            for sentence in data:
-                print(sentence)
+            data = gps.get_raw_nmea()
+            if data is not False:
+                for sentence in data:
+                    print(ser.write(data))
 
 if __name__ == '__main__':
     try:
