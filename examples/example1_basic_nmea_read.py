@@ -61,11 +61,8 @@ def run_example():
     
     gps.begin()
 
-    while True:
-        data = gps.get_raw_nmea()
-        if data is not False:
-            for sentence in data:
-                print(data)
+    val = gps.clear_configuration()
+    print(val)
 
 if __name__ == '__main__':
     try:

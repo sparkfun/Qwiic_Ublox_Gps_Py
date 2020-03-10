@@ -48,28 +48,29 @@
 #
 
 
-# ...and because I'm developing: 
-# pylint: disable-all
+# ...and because I'm developing:
+# pylint: disable-all  
 import module_constants
 import serial
-from time import sleep 
+from time import sleep
 
 def UbloxSpi(object):
 
     def __init__(self, port_settings):
+        self.port_settings = port_settings
         pass
 
     def calc_fletch_checksum(self, packet):
-        # The length key is not used here. 
+        # The length key is not used here.
         pass
 
     def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
         pass
 
-    def send_command(self, packet): 
+    def send_command(self, packet):
         pass
 
-    def receive_command(self, packet): 
+    def receive_command(self, packet):
         pass
 
 
@@ -77,21 +78,21 @@ def UbloxSerial(object):
 
     def __init__(self, port_settings):
         self.port_settings = port_settings
-        
+
 
     def calc_fletch_checksum(self, packet):
 
         checksum_B = 0
-        checksum_A = packet.get(ubx_class)
-        checksum_A = checksum_A + packet.get(ubx_id)
-        checksum_A = checksum_A + packet.get(ubx_length)
+        checksum_A = packet.get('ubx_class')
+        checksum_A = checksum_A + packet.get('ubx_id')
+        checksum_A = checksum_A + packet.get('ubx_length')
         checksum_B = checksum_A + checksum_B
-        for index,item in enumerate(packet.get(ubx_payload)):
+        for index,item in enumerate(packet.get('ubx_payload')):
             checksum_A = checksum_A + item
             checksum_B = checksum_B + checksum_A
 
-        packet["ubx_checkA"] = checksum_A 
-        packet["ubx_checkB"] = checksum_B 
+        packet["ubx_checkA"] = checksum_A
+        packet["ubx_checkB"] = checksum_B
 
         return packet
 
@@ -112,29 +113,30 @@ def UbloxSerial(object):
 
     def build_response(self, byte_list):
 
-        packet['ubx_class'] = byte[0]
-        packet['ubx_id'] = byte[1]
-        packet['ubx_length'] = byte[2]
-        packet['payload'] = byte[3:-3] 
-        packet['ubx_checkA'] = byte[-2]
-        packet['ubx_checkB'] = byte[-1]
+        packet = {}
+        packet['ubx_class'] = byte_list[0]
+        packet['ubx_id'] = byte_list[1]
+        packet['ubx_length'] = byte_list[2]
+        packet['payload'] = byte_list[3:-3]
+        packet['ubx_checkA'] = byte_list[-2]
+        packet['ubx_checkB'] = byte_list[-1]
 
         return packet
 
-    def confirm_send(self, byte_list, packet):
-            
+    def confirm_send(self, ubx_response, packet):
+
         if ubx_response.get('ubx_class') == UBX_CLASS_ACK:
-            if ubx_response.get('ubx_id') == UBX_ACK_ACK:  
+            if ubx_response.get('ubx_id') == UBX_ACK_ACK:
                 if ubx_response.get('ubx_payload')[0] == \
                     packet.get('ubx_class') and \
                     ubx_response.get['ubx_payload'][1] == \
                     packet.get('ubx_id'):
                     return True
 
-            elif ubx_response.get('ubx_id') == UBX_ACK_NAK:  
+            elif ubx_response.get('ubx_id') == UBX_ACK_NAK:
                 return False
 
-    def send_command(self, packet): 
+    def send_command(self, packet):
 
         with serial.Serial(self.port_settings.get('port'),
                            self.port_settings.get('baud'),
@@ -159,12 +161,12 @@ def UbloxSerial(object):
                 for byte in range(ser.in_waiting):
                     ublox_response.append(ser.read())
 
-                ubx_response = self.build_response(byte_list)
-                return(self.confirm_send(ubx_response, packet))
+                ubx_response = self.build_response(ublox_response)
+                return self.confirm_send(ubx_response, packet)
 
             return True # Not sure on this
 
-    def receive_command(self, packet): 
+    def receive_command(self, packet):
 
         with serial.Serial(self.port_settings.get('port'),
                            self.port_settings.get('baud'),
@@ -175,7 +177,7 @@ def UbloxSerial(object):
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
             ser.write(packet.get('ubx_length'))
-            # No payload to write - we're looking for a response. 
+            # No payload to write - we're looking for a response.
             ser.write(packet.get('ubx_checkA'))
             ser.write(packet.get('ubx_checkB'))
 
@@ -185,8 +187,7 @@ def UbloxSerial(object):
 
             for byte in range(ser.in_waiting):
                 ublox_response.append(ser.read())
-            
+
             ubx_response = self.build_response(ublox_response)
 
             return ubx_response
-

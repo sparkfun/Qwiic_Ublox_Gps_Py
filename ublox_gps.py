@@ -49,7 +49,6 @@
 
 # pylint: disable-all
 import ublox_comms
-import module_constants # Not sure I need this.
 
 def UbloxGps(object):
 
@@ -57,6 +56,12 @@ def UbloxGps(object):
         self.comm_interface = comm_interface
     
     def get_altitude(self):
-        self.comm_interface.build_packet(UBX_CLASS_NAV, some_id, 
-                                         some_length, payload)
         pass
+    
+    def clear_configruation(self):
+        packet = self.comm_interface.build_packet(UBX_CLASS_CFG, 
+                                                  UBX_CFG_CFG,
+                                                  0, 0)
+        ublox_reponse = self.comm_interface.recieve_command(packet)
+        return(ublox_reponse.get('payload'))
+
