@@ -52,7 +52,7 @@ ser_settings = {
 def run_example():
 
     print("SparkFun u-blox GPS!")
-    gps = UbloxGps(UbloxSerial())
+    gps = UbloxGps(UbloxSerial(ser_settings))
 
     if gps.connected == False:
         print("Could not connect to to the SparkFun GPS Unit. Double check that\
@@ -61,14 +61,11 @@ def run_example():
     
     gps.begin()
 
-    with serial.Serial(ser_settings.port, ser_settings.baud,
-                       ser_settings.timeout) as ser:
-        while True:
-
-            data = gps.get_raw_nmea()
-            if data is not False:
-                for sentence in data:
-                    print(ser.write(data))
+    while True:
+        data = gps.get_raw_nmea()
+        if data is not False:
+            for sentence in data:
+                print(data)
 
 if __name__ == '__main__':
     try:
