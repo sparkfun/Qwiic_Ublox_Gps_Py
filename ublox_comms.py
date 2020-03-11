@@ -70,8 +70,8 @@ class UbloxSpi(object):
     def send_command(self, packet):
         pass
 
-    def receive_command(self, packet):
-        pass
+    #def receive_command(self, packet):
+    #    pass
 
 
 class UbloxSerial(object):
@@ -85,6 +85,7 @@ class UbloxSerial(object):
         checksum_B = 0
         checksum_A = packet.get('ubx_class')
         checksum_A = checksum_A + packet.get('ubx_id')
+        checksum_B = checksum_A + checksum_B
         checksum_A = checksum_A + packet.get('ubx_length')
         checksum_B = checksum_A + checksum_B
         for index,item in enumerate(packet.get('ubx_payload')):
@@ -177,7 +178,6 @@ class UbloxSerial(object):
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
             ser.write(packet.get('ubx_length'))
-            # No payload to write - we're looking for a response.
             ser.write(packet.get('ubx_checkA'))
             ser.write(packet.get('ubx_checkB'))
 
