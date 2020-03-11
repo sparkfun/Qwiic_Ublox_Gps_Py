@@ -50,7 +50,7 @@
 # pylint: disable-all
 import ublox_comms
 
-def UbloxGps(object):
+class UbloxGps(object):
 
     def __init__(self, comm_interface):
         self.comm_interface = comm_interface

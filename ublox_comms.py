@@ -54,7 +54,7 @@ import module_constants
 import serial
 from time import sleep
 
-def UbloxSpi(object):
+class UbloxSpi(object):
 
     def __init__(self, port_settings):
         self.port_settings = port_settings
@@ -74,7 +74,7 @@ def UbloxSpi(object):
         pass
 
 
-def UbloxSerial(object):
+class UbloxSerial(object):
 
     def __init__(self, port_settings):
         self.port_settings = port_settings
