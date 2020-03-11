@@ -65,3 +65,45 @@ def UbloxGps(object):
         ublox_reponse = self.comm_interface.recieve_command(packet)
         return(ublox_reponse.get('payload'))
 
+    def extract_byte(self, packet, location):
+        payload = packet.get('payload')
+        byte = payload[location]
+        return byte 
+
+    def extract_int(self, packet, location):
+        payload = packet.get('payload')
+        two_byte = payload[location] << 8
+        two_byte = two_byte | payload[location + 1]
+        return two_byte 
+
+    def extract_long(self, packet, location):
+        payload = packet.get('payload')
+        four_byte = payload[location] << 24
+        four_byte = four_byte | (payload[location + 1] << 16)
+        four_byte = four_byte | (payload[location + 2] << 8)
+        four_byte = four_byte | payload[location + 3] 
+        return four_byte 
+
+    def get_soft_version(self, packet, location):
+        packet = self.comm_interface.build_packet(UBX_CLASS_MON,
+                                                  UBX_MON_VER, 
+                                                  0, 0)
+        ublox_reponse = self.comm_interface.recieve_command(packet)
+        payload = ublox_reponse.get('payload') 
+        for byte in range(30): 
+            soft_vers = soft_vers | payload[byte] 
+            soft_vers = soft_vers << 8
+            
+        return soft_vers 
+
+    def get_hard_version(self, packet, location):
+        packet = self.comm_interface.build_packet(UBX_CLASS_MON,
+                                                  UBX_MON_VER, 
+                                                  0, 0)
+        ublox_reponse = self.comm_interface.recieve_command(packet)
+        payload = ublox_reponse.get('payload') 
+        for byte in range(30, 41): 
+            hard_vers = hard_vers | payload[byte] 
+            hard_vers = hard_vers << 8
+            
+        return hard_vers 

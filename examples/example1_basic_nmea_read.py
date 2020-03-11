@@ -61,8 +61,8 @@ def run_example():
     
     gps.begin()
 
-    val = gps.clear_configuration()
-    print(val)
+    version = gps.get_soft_version()
+    print(version)
 
 if __name__ == '__main__':
     try:
