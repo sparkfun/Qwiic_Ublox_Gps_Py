@@ -50,7 +50,7 @@
 
 # ...and because I'm developing:
 # pylint: disable-all  
-import module_constants
+import module_constants as ubc
 import serial
 from time import sleep
 
@@ -107,7 +107,7 @@ class UbloxSerial(object):
             "ubx_checkB" : None
         }
 
-        packet = calc_fletch_checksum(ubx_message)
+        packet = self.calc_fletch_checksum(ubx_message)
 
         return packet
 
@@ -140,10 +140,10 @@ class UbloxSerial(object):
 
         with serial.Serial(self.port_settings.get('port'),
                            self.port_settings.get('baud'),
-                           self.port_settings.get('timemout')) as ser:
+                           timeout=self.port_settings.get('timemout')) as ser:
 
-            ser.write(UBX_SYNCH_1)
-            ser.write(UBX_SYNCH_2)
+            ser.write(ubc.UBX_SYNCH_1)
+            ser.write(ubc.UBX_SYNCH_2)
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
             ser.write(packet.get('ubx_length'))
@@ -170,10 +170,10 @@ class UbloxSerial(object):
 
         with serial.Serial(self.port_settings.get('port'),
                            self.port_settings.get('baud'),
-                           self.port_settings.get('timemout')) as ser:
+                           timeout=self.port_settings.get('timemout')) as ser:
 
-            ser.write(UBX_SYNCH_1)
-            ser.write(UBX_SYNCH_2)
+            ser.write(ubc.UBX_SYNCH_1)
+            ser.write(ubc.UBX_SYNCH_2)
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
             ser.write(packet.get('ubx_length'))

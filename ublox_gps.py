@@ -49,6 +49,7 @@
 
 # pylint: disable-all
 import ublox_comms
+import module_constants as ubc
 
 class UbloxGps(object):
 
@@ -59,10 +60,10 @@ class UbloxGps(object):
         pass
     
     def clear_configruation(self):
-        packet = self.comm_interface.build_packet(UBX_CLASS_CFG, 
-                                                  UBX_CFG_CFG,
+        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_CFG, 
+                                                  ubc.UBX_CFG_CFG,
                                                   0, 0)
-        ublox_reponse = self.comm_interface.recieve_command(packet)
+        ublox_reponse = self.comm_interface.receive_command(packet)
         return(ublox_reponse.get('payload'))
 
     def extract_byte(self, packet, location):
@@ -84,11 +85,11 @@ class UbloxGps(object):
         four_byte = four_byte | payload[location + 3] 
         return four_byte 
 
-    def get_soft_version(self, packet, location):
-        packet = self.comm_interface.build_packet(UBX_CLASS_MON,
-                                                  UBX_MON_VER, 
-                                                  0, 0)
-        ublox_reponse = self.comm_interface.recieve_command(packet)
+    def get_soft_version(self):
+        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_MON,
+                                                  ubc.UBX_MON_VER, 
+                                                  0, [])
+        ublox_reponse = self.comm_interface.receive_command(packet)
         payload = ublox_reponse.get('payload') 
         for byte in range(30): 
             soft_vers = soft_vers | payload[byte] 
@@ -96,11 +97,11 @@ class UbloxGps(object):
             
         return soft_vers 
 
-    def get_hard_version(self, packet, location):
-        packet = self.comm_interface.build_packet(UBX_CLASS_MON,
-                                                  UBX_MON_VER, 
+    def get_hard_version(self):
+        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_MON,
+                                                  ubc.UBX_MON_VER, 
                                                   0, 0)
-        ublox_reponse = self.comm_interface.recieve_command(packet)
+        ublox_reponse = self.comm_interface.receive_command(packet)
         payload = ublox_reponse.get('payload') 
         for byte in range(30, 41): 
             hard_vers = hard_vers | payload[byte] 
