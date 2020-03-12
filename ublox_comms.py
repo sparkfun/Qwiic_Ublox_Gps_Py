@@ -102,6 +102,8 @@ class UbloxSerial(object):
         ubx_message = {
             "ubx_class" : ubx_class,
             "ubx_id" : ubx_id,
+            "ubx_length_lsb" : ubx_length & 0xFF,
+            "ubx_length_msb" : ubx_length >> 8,
             "ubx_length" : ubx_length,
             "ubx_payload" : ubx_payload, #list of bytes
             "ubx_checkA" : None,
@@ -114,13 +116,21 @@ class UbloxSerial(object):
 
     def build_response(self, byte_list):
 
-        packet = {}
-        packet['ubx_class'] = byte_list[0]
-        packet['ubx_id'] = byte_list[1]
-        packet['ubx_length'] = byte_list[2]
-        packet['payload'] = byte_list[3:-3]
-        packet['ubx_checkA'] = byte_list[-2]
-        packet['ubx_checkB'] = byte_list[-1]
+        try: 
+
+            packet = {}
+            packet['ubx_class'] = byte_list[0]
+            packet['ubx_id'] = byte_list[1]
+            packet['ubx_length_lsb'] = byte_list[2]
+            packet['ubx_length_msb'] = byte_list[3]
+            packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
+            packet['payload'] = byte_list[4:-3]
+            packet['ubx_checkA'] = byte_list[-2]
+            packet['ubx_checkB'] = byte_list[-1]
+
+        except IndexError:
+            print("No data response from ublox module.")
+            return {}
 
         return packet
 
@@ -147,7 +157,8 @@ class UbloxSerial(object):
             ser.write(ubc.UBX_SYNCH_2)
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
-            ser.write(packet.get('ubx_length'))
+            ser.write(packet.get('ubx_length_lsb'))
+            ser.write(packet.get('ubx_length_msb'))
 
             for index,p_item in packet.get('ubx_payload').enumerate():
                 ser.write(p_item)
@@ -177,14 +188,16 @@ class UbloxSerial(object):
             ser.write(ubc.UBX_SYNCH_2)
             ser.write(packet.get('ubx_class'))
             ser.write(packet.get('ubx_id'))
-            ser.write(packet.get('ubx_length'))
+            ser.write(packet.get('ubx_length_lsb'))
+            ser.write(packet.get('ubx_length_msb'))
             ser.write(packet.get('ubx_checkA'))
             ser.write(packet.get('ubx_checkB'))
 
-            sleep(.1) # 10ms wait
+            sleep(.3) # 300ms wait
 
             ublox_response = []
 
+            print(ser.in_waiting)
             for byte in range(ser.in_waiting):
                 ublox_response.append(ser.read())
 

@@ -89,9 +89,10 @@ class UbloxGps(object):
         packet = self.comm_interface.build_packet(ubc.UBX_CLASS_MON,
                                                   ubc.UBX_MON_VER, 
                                                   0, [])
-        print(packet)
         ublox_reponse = self.comm_interface.receive_command(packet)
         payload = ublox_reponse.get('payload') 
+        print(payload)
+        soft_vers = 0
         for byte in range(30): 
             soft_vers = soft_vers | payload[byte] 
             soft_vers = soft_vers << 8
@@ -104,6 +105,7 @@ class UbloxGps(object):
                                                   0, [])
         ublox_reponse = self.comm_interface.receive_command(packet)
         payload = ublox_reponse.get('payload') 
+        hard_vers = 0
         for byte in range(30, 41): 
             hard_vers = hard_vers | payload[byte] 
             hard_vers = hard_vers << 8
