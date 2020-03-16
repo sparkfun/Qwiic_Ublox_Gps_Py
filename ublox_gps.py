@@ -54,16 +54,16 @@ import module_constants as ubc
 class UbloxGps(object):
 
     def __init__(self, comm_interface):
-        self.comm_interface = comm_interface
+        self.comm_inter = comm_interface
     
     def get_altitude(self):
         pass
     
     def clear_configruation(self):
-        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_CFG, 
+        packet = self.comm_inter.build_packet(ubc.UBX_CLASS_CFG, 
                                                   ubc.UBX_CFG_CFG,
                                                   0, 0)
-        ublox_reponse = self.comm_interface.receive_command(packet)
+        ublox_reponse = self.comm_inter.receive_command(packet)
         return(ublox_reponse.get('payload'))
 
     def extract_byte(self, packet, location):
@@ -86,10 +86,10 @@ class UbloxGps(object):
         return four_byte 
 
     def get_soft_version(self):
-        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_MON,
+        packet = self.comm_inter.build_packet(ubc.UBX_CLASS_MON,
                                                   ubc.UBX_MON_VER, 
                                                   0, [])
-        ublox_reponse = self.comm_interface.receive_command(packet)
+        ublox_reponse = self.comm_inter.receive_command(packet)
         payload = ublox_reponse.get('payload') 
         print(payload)
         soft_vers = 0
@@ -100,10 +100,10 @@ class UbloxGps(object):
         return soft_vers 
 
     def get_hard_version(self):
-        packet = self.comm_interface.build_packet(ubc.UBX_CLASS_MON,
+        packet = self.comm_inter.build_packet(ubc.UBX_CLASS_MON,
                                                   ubc.UBX_MON_VER, 
                                                   0, [])
-        ublox_reponse = self.comm_interface.receive_command(packet)
+        ublox_reponse = self.comm_inter.receive_command(packet)
         payload = ublox_reponse.get('payload') 
         hard_vers = 0
         for byte in range(30, 41): 

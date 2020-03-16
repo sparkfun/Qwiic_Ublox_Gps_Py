@@ -52,33 +52,22 @@
 # pylint: disable-all  
 import module_constants as ubc
 import serial
+import spidev
 from time import sleep
 
 class UbloxSpi(object):
 
     def __init__(self, port_settings):
-        self.port_settings = port_settings
-        pass
 
-    def calc_fletch_checksum(self, packet):
-        # The length key is not used here.
-        pass
-
-    def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
-        pass
-
-    def send_command(self, packet):
-        pass
-
-    #def receive_command(self, packet):
-    #    pass
-
-
-class UbloxSerial(object):
-
-    def __init__(self, port_settings):
-        self.port_settings = port_settings
-
+        if port_settings is not None: 
+            self.port_settings = port_settings
+        else: 
+            self.port_settings = {
+                'max_speed': 5500, # Max Speed is 5.5MHz
+                'spi_mode': 0b00, # SPI mode 0
+                'bus' : 0,
+                'device': 0
+            }
 
     def calc_fletch_checksum(self, packet):
 
@@ -88,7 +77,7 @@ class UbloxSerial(object):
         checksum_B = checksum_A + checksum_B
         checksum_A = checksum_A + packet.get('ubx_length')
         checksum_B = checksum_A + checksum_B
-        for index,item in enumerate(packet.get('ubx_payload')):
+        for item in packet.get('ubx_payload'):
             checksum_A = checksum_A + item
             checksum_B = checksum_B + checksum_A
 
@@ -116,21 +105,133 @@ class UbloxSerial(object):
 
     def build_response(self, byte_list):
 
-        try: 
+        packet = {}
+        packet['ubx_class'] = byte_list[0]
+        packet['ubx_id'] = byte_list[1]
+        packet['ubx_length_lsb'] = byte_list[2]
+        packet['ubx_length_msb'] = byte_list[3]
+        packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
+        packet['payload'] = byte_list[4:-3]
+        packet['ubx_checkA'] = byte_list[-2]
+        packet['ubx_checkB'] = byte_list[-1]
 
-            packet = {}
-            packet['ubx_class'] = byte_list[0]
-            packet['ubx_id'] = byte_list[1]
-            packet['ubx_length_lsb'] = byte_list[2]
-            packet['ubx_length_msb'] = byte_list[3]
-            packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
-            packet['payload'] = byte_list[4:-3]
-            packet['ubx_checkA'] = byte_list[-2]
-            packet['ubx_checkB'] = byte_list[-1]
+        return packet
 
-        except IndexError:
-            print("No data response from ublox module.")
+
+    def send_command(self, packet):
+
+        spi = spidev.SpiDev()
+        spi.max_speed_hz = self.port_settings.get('max_speed')
+        spi.mode = self.port_settings.get('mode')
+
+        spi.open(self.port_settings.get('bus'), 
+                 self.port_settings.get('device'))
+
+        to_send = [packet.get('class'), packet.get('id'),
+                   packet.get('ubx_length_lsb'), packet.get('ubx_length_msb')]
+
+        for byte in packet.get('payload'):
+            to_send.append(byte)
+
+        to_send.append(payload.get('ubx_checkA')) 
+        to_send.append(payload.get('ubx_checkB'))
+
+        # xfer2 holds chip select low until the entire block has been sent.
+        spi.xfer2([to_send])
+
+
+    def receive_command(self, packet):
+
+        spi = spidev.SpiDev()
+        spi.max_speed_hz = self.port_settings.get('max_speed')
+        spi.mode = self.port_settings.get('mode')
+
+        spi.open(self.port_settings.get('bus'), 
+                 self.port_settings.get('device'))
+
+        to_send = [packet.get('class'), packet.get('id'),
+                   packet.get('ubx_length_lsb'), packet.get('ubx_length_msb'),
+                   payload.get('ubx_checkA'), payload.get('ubx_checkB')]
+
+        # xfer2 holds chip select low until the entire block has been sent.
+        spi.xfer2([to_send])
+
+        sleep(.3) # 300ms wait
+
+        ublox_response = []
+
+        while True: 
+            ublox_response.append(spi.readBytes(1))
+            if ublox_response[-1] == 0xFF:
+                break
+           
+        if len(ublox_response) >= 1 
+            ubx_response = self.build_response(ublox_response)
+            return ubx_response
+        else:
             return {}
+
+
+
+class UbloxSerial(object):
+
+    def __init__(self, port_settings):
+        if port_settings is not None: 
+            self.port_settings = port_settings
+        else:
+            self.port_settings = {
+                'port': '/dev/ttyserial0',
+                'baud': 9600,
+                'timeout': 1
+            } 
+
+
+    def calc_fletch_checksum(self, packet):
+
+        checksum_B = 0
+        checksum_A = packet.get('ubx_class')
+        checksum_A = checksum_A + packet.get('ubx_id')
+        checksum_B = checksum_A + checksum_B
+        checksum_A = checksum_A + packet.get('ubx_length')
+        checksum_B = checksum_A + checksum_B
+        for item in packet.get('ubx_payload'):
+            checksum_A = checksum_A + item
+            checksum_B = checksum_B + checksum_A
+
+        packet["ubx_checkA"] = checksum_A
+        packet["ubx_checkB"] = checksum_B
+
+        return packet
+
+    def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
+
+        ubx_message = {
+            "ubx_class" : ubx_class,
+            "ubx_id" : ubx_id,
+            "ubx_length_lsb" : ubx_length & 0xFF,
+            "ubx_length_msb" : ubx_length >> 8,
+            "ubx_length" : ubx_length,
+            "ubx_payload" : ubx_payload, #list of bytes
+            "ubx_checkA" : None,
+            "ubx_checkB" : None
+        }
+
+        packet = self.calc_fletch_checksum(ubx_message)
+
+        return packet
+
+    def build_response(self, byte_list):
+
+
+        packet = {}
+        packet['ubx_class'] = byte_list[0]
+        packet['ubx_id'] = byte_list[1]
+        packet['ubx_length_lsb'] = byte_list[2]
+        packet['ubx_length_msb'] = byte_list[3]
+        packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
+        packet['payload'] = byte_list[4:-3]
+        packet['ubx_checkA'] = byte_list[-2]
+        packet['ubx_checkB'] = byte_list[-1]
 
         return packet
 
@@ -160,7 +261,7 @@ class UbloxSerial(object):
             ser.write(packet.get('ubx_length_lsb'))
             ser.write(packet.get('ubx_length_msb'))
 
-            for index,p_item in packet.get('ubx_payload').enumerate():
+            for p_item in packet.get('ubx_payload'):
                 ser.write(p_item)
 
             ser.write(packet.get('ubx_checkA'))
@@ -201,6 +302,9 @@ class UbloxSerial(object):
             for byte in range(ser.in_waiting):
                 ublox_response.append(ser.read())
 
-            ubx_response = self.build_response(ublox_response)
+            if ublox_response:
+                ubx_response = self.build_response(ublox_response)
+                return ubx_response
+            else
+                return {}
 
-            return ubx_response
