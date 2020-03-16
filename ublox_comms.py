@@ -57,7 +57,7 @@ from time import sleep
 
 class UbloxSpi(object):
 
-    def __init__(self, port_settings):
+    def __init__(self, port_settings = None):
 
         if port_settings is not None: 
             self.port_settings = port_settings
@@ -177,7 +177,7 @@ class UbloxSpi(object):
 
 class UbloxSerial(object):
 
-    def __init__(self, port_settings):
+    def __init__(self, port_settings = None):
         if port_settings is not None: 
             self.port_settings = port_settings
         else:
