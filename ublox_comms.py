@@ -138,7 +138,7 @@ class UbloxSpi(object):
 
         # xfer2 holds chip select low until the entire block has been sent.
         spi.xfer2([to_send])
-
+        spi.close()
 
     def receive_command(self, packet):
 
@@ -165,7 +165,9 @@ class UbloxSpi(object):
             if ublox_response[-1] == 0xFF:
                 break
            
-        if len(ublox_response) >= 1 
+        spi.close()
+
+        if len(ublox_response) >= 1: 
             ubx_response = self.build_response(ublox_response)
             return ubx_response
         else:
@@ -305,6 +307,6 @@ class UbloxSerial(object):
             if ublox_response:
                 ubx_response = self.build_response(ublox_response)
                 return ubx_response
-            else
+            else:
                 return {}
 
