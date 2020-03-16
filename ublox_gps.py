@@ -90,14 +90,17 @@ class UbloxGps(object):
                                                   ubc.UBX_MON_VER, 
                                                   0, [])
         ublox_reponse = self.comm_inter.receive_command(packet)
+        print(packet)
         payload = ublox_reponse.get('payload') 
-        print(payload)
-        soft_vers = 0
-        for byte in range(30): 
-            soft_vers = soft_vers | payload[byte] 
-            soft_vers = soft_vers << 8
-            
-        return soft_vers 
+        if payload is not None:
+            soft_vers = b'0'
+            for item in range(30): 
+                soft_vers = soft_vers | payload[byte] 
+                soft_vers = soft_vers << 8
+
+            return soft_vers 
+        else: 
+            return 0
 
     def get_hard_version(self):
         packet = self.comm_inter.build_packet(ubc.UBX_CLASS_MON,

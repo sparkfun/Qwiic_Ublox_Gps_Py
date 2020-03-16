@@ -283,6 +283,7 @@ class UbloxSerial(object):
 
     def receive_command(self, packet):
 
+
         with serial.Serial(self.port_settings.get('port'),
                            self.port_settings.get('baud'),
                            timeout=self.port_settings.get('timemout')) as ser:
@@ -293,10 +294,11 @@ class UbloxSerial(object):
             ser.write(packet.get('ubx_id'))
             ser.write(packet.get('ubx_length_lsb'))
             ser.write(packet.get('ubx_length_msb'))
+            ser.write(0)#payload
             ser.write(packet.get('ubx_checkA'))
             ser.write(packet.get('ubx_checkB'))
 
-            sleep(.3) # 300ms wait
+            sleep(.5) # 500ms wait
 
             ublox_response = []
 
