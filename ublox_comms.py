@@ -142,30 +142,34 @@ class UbloxSpi(object):
 
     def receive_command(self, packet):
 
+        to_send = [packet.get('ubx_class'), packet.get('ubx_id'),
+                   packet.get('ubx_length_lsb'), packet.get('ubx_length_msb'),
+                   packet.get('ubx_checkA'), packet.get('ubx_checkB')]
+
         spi = spidev.SpiDev()
-        spi.max_speed_hz = self.port_settings.get('max_speed')
-        spi.mode = self.port_settings.get('mode')
 
         spi.open(self.port_settings.get('bus'), 
                  self.port_settings.get('device'))
 
-        to_send = [packet.get('class'), packet.get('id'),
-                   packet.get('ubx_length_lsb'), packet.get('ubx_length_msb'),
-                   payload.get('ubx_checkA'), payload.get('ubx_checkB')]
+        spi.max_speed_hz = self.port_settings.get('max_speed')
+        spi.mode = self.port_settings.get('spi_mode')
 
         # xfer2 holds chip select low until the entire block has been sent.
-        spi.xfer2([to_send])
+        spi.xfer2(to_send)
 
         sleep(.3) # 300ms wait
 
         ublox_response = []
 
         while True: 
-            ublox_response.append(spi.readBytes(1))
-            if ublox_response[-1] == 0xFF:
+            ublox_response.extend(spi.readbytes(1))
+            if ublox_response[-1] == 255:
+                ublox_response.pop()
                 break
            
         spi.close()
+        char_response = [chr(item) for item in ublox_response]
+        print(ublox_response, char_response)
 
         if len(ublox_response) >= 1: 
             ubx_response = self.build_response(ublox_response)

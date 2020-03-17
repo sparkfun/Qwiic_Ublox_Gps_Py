@@ -90,12 +90,11 @@ class UbloxGps(object):
                                                   ubc.UBX_MON_VER, 
                                                   0, [])
         ublox_reponse = self.comm_inter.receive_command(packet)
-        print(packet)
         payload = ublox_reponse.get('payload') 
         if payload is not None:
             soft_vers = b'0'
             for item in range(30): 
-                soft_vers = soft_vers | payload[byte] 
+                soft_vers = soft_vers | payload[item] 
                 soft_vers = soft_vers << 8
 
             return soft_vers 
