@@ -91,7 +91,7 @@ horizontal_accuracy = 0
 vertical_accuracy = 0
 
 rtcm_frame_counter = 0 # Tracks the type of incoming byte inside RTCM frame
-ubx_frame_counter = 0
+UBX_FRAME_COUNTER = 0
 rolling_checksum_A = 0
 rolling_checksum_B = 0
 rtcm_length = 0
@@ -100,32 +100,57 @@ package_nmea = False
 new_sentence_flag = True
 
 # Dictionaries that hold packets to send to GPS unit
+ubx_message = {
+    "ubx_class" : None,
+    "ubx_id" : None,
+    "ubx_length" : None,
+    "ubx_payload" : [], #list of bytes
+    "ubx_checkA" : None,
+    "ubx_checkB" : None,
+    "ubx_check_pass": False,
+    "counter": None,
+    "start" : None
+}
+
+ubx_message_buffer = {
+    "ubx_class" : None,
+    "ubx_id" : None,
+    "ubx_length" : None,
+    "ubx_payload" : [], #list of bytes
+    "ubx_checkA" : None,
+    "ubx_checkB" : None,
+    "ubx_check_pass": False,
+    "counter": None,
+    "start" : None
+}
 ublox_packet_cfg = {
 
-    'Class'         : 0,
-    'ID'            : 0,
-    'Length'        : 0,
-    'Counter'       : 0,
-    'Start'         : 0,
-    'Payload'       : payload_config,
-    'Checksum_A'    : 0,
-    'Checksum_B'    : 0,
-    'Checksum_Pass' : False,
-    'Valid'         : False
+    'ubx_class'     : None,
+    'ubx_id'        : None,
+    'ubx_length'    : None,
+    'ubx_payload'   : Nonepayload_config,
+    'ubx_checkA'    : None,
+    'ubx_checkB'    : None,
+    'ubx_check_pass': False,
+    'counter'       : None,
+    'start'         : None,
+    'valid'         : False,
+    'class_id_match'         : False
 }
 
 ublox_packet_ack = {
 
-    'Class'          : 0,
-    'ID'             : 0,
-    'Length'         : 0,
-    'Counter'        : 0,
-    'Start'          : 0,
-    'Payload'        : payload_ack,
-    'Checksum_A'     : 0,
-    'Checksum_B'     : 0,
-    'Checksum_Pass'  : False,
-    'Valid'          : False
+    'ubx_class'      : None,
+    'ubx_id'         : None,
+    'ubx_length'     : None,
+    'ubx_payload'    : payload_ack,
+    'ubx_checkA'     : None,
+    'ubx_checkB'     : None,
+    'ubx_check_pass' : False,
+    'counter'        : None,
+    'start'          : None,
+    'valid'          : False,
+    'class_id_match': False
 }
 
 is_module_queried = {
@@ -210,6 +235,8 @@ gnss_messages = {
 
 # Lists of various settings:
 
+NMEA_BEGIN = '$'
+RTCM_BEGIN_VAL = 0xD3
 # u-blox Register List
 UBX_SYNCH_1    = 0xB5
 UBX_SYNCH_2    = 0x62
@@ -329,5 +356,14 @@ COMM_TYPE_SERIAL = 2
 COMM_TYPE_SPI = 3
 outgoing_data_channel = None
 
+# Class flags
 _RPiCheck = False
+IGNORE_PAYLOAD = False
+SFE_UBLOX_PACKET_PACKETCFG = 0
+SFE_UBLOX_PACKET_PACKETACK = 1
+SFE_UBLOX_PACKET_PACKETBUF = 2
+SFE_UBLOX_PACKET_VALIDITY_NOT_VALID = 0
+SFE_UBLOX_PACKET_VALIDITY_VALID = 1
+SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED = 2
+SFE_UBLOX_PACKET_NOTACKNOWLEDGED = 3
 

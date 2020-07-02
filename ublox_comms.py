@@ -69,55 +69,6 @@ class UbloxSpi(object):
                 'device': 0
             }
 
-    def calc_fletch_checksum(self, packet):
-
-        checksum_B = 0
-        checksum_A = packet.get('ubx_class')
-        checksum_A = checksum_A + packet.get('ubx_id')
-        checksum_B = checksum_A + checksum_B
-        checksum_A = checksum_A + packet.get('ubx_length')
-        checksum_B = checksum_A + checksum_B
-        for item in packet.get('ubx_payload'):
-            checksum_A = checksum_A + item
-            checksum_B = checksum_B + checksum_A
-
-        packet["ubx_checkA"] = checksum_A
-        packet["ubx_checkB"] = checksum_B
-
-        return packet
-
-    def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
-
-        ubx_message = {
-            "ubx_class" : ubx_class,
-            "ubx_id" : ubx_id,
-            "ubx_length_lsb" : ubx_length & 0xFF,
-            "ubx_length_msb" : ubx_length >> 8,
-            "ubx_length" : ubx_length,
-            "ubx_payload" : ubx_payload, #list of bytes
-            "ubx_checkA" : None,
-            "ubx_checkB" : None
-        }
-
-        packet = self.calc_fletch_checksum(ubx_message)
-
-        return packet
-
-    def build_response(self, byte_list):
-
-        packet = {}
-        packet['ubx_class'] = byte_list[0]
-        packet['ubx_id'] = byte_list[1]
-        packet['ubx_length_lsb'] = byte_list[2]
-        packet['ubx_length_msb'] = byte_list[3]
-        packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
-        packet['payload'] = byte_list[4:-3]
-        packet['ubx_checkA'] = byte_list[-2]
-        packet['ubx_checkB'] = byte_list[-1]
-
-        return packet
-
-
     def send_command(self, packet):
 
         spi = spidev.SpiDev()
@@ -186,73 +137,10 @@ class UbloxSerial(object):
             self.port_settings = port_settings
         else:
             self.port_settings = {
-                'port': '/dev/ttyserial0',
+                'port': '/dev/serial0',
                 'baud': 9600,
                 'timeout': 1
             } 
-
-
-    def calc_fletch_checksum(self, packet):
-
-        checksum_B = 0
-        checksum_A = packet.get('ubx_class')
-        checksum_A = checksum_A + packet.get('ubx_id')
-        checksum_B = checksum_A + checksum_B
-        checksum_A = checksum_A + packet.get('ubx_length')
-        checksum_B = checksum_A + checksum_B
-        for item in packet.get('ubx_payload'):
-            checksum_A = checksum_A + item
-            checksum_B = checksum_B + checksum_A
-
-        packet["ubx_checkA"] = checksum_A
-        packet["ubx_checkB"] = checksum_B
-
-        return packet
-
-    def build_packet(self, ubx_class, ubx_id, ubx_length, ubx_payload):
-
-        ubx_message = {
-            "ubx_class" : ubx_class,
-            "ubx_id" : ubx_id,
-            "ubx_length_lsb" : ubx_length & 0xFF,
-            "ubx_length_msb" : ubx_length >> 8,
-            "ubx_length" : ubx_length,
-            "ubx_payload" : ubx_payload, #list of bytes
-            "ubx_checkA" : None,
-            "ubx_checkB" : None
-        }
-
-        packet = self.calc_fletch_checksum(ubx_message)
-
-        return packet
-
-    def build_response(self, byte_list):
-
-
-        packet = {}
-        packet['ubx_class'] = byte_list[0]
-        packet['ubx_id'] = byte_list[1]
-        packet['ubx_length_lsb'] = byte_list[2]
-        packet['ubx_length_msb'] = byte_list[3]
-        packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
-        packet['payload'] = byte_list[4:-3]
-        packet['ubx_checkA'] = byte_list[-2]
-        packet['ubx_checkB'] = byte_list[-1]
-
-        return packet
-
-    def confirm_send(self, ubx_response, packet):
-
-        if ubx_response.get('ubx_class') == UBX_CLASS_ACK:
-            if ubx_response.get('ubx_id') == UBX_ACK_ACK:
-                if ubx_response.get('ubx_payload')[0] == \
-                    packet.get('ubx_class') and \
-                    ubx_response.get['ubx_payload'][1] == \
-                    packet.get('ubx_id'):
-                    return True
-
-            elif ubx_response.get('ubx_id') == UBX_ACK_NAK:
-                return False
 
     def send_command(self, packet):
 
@@ -306,7 +194,6 @@ class UbloxSerial(object):
 
             ublox_response = []
 
-            print(ser.in_waiting)
             for byte in range(ser.in_waiting):
                 ublox_response.append(ser.read())
 
@@ -315,4 +202,40 @@ class UbloxSerial(object):
                 return ubx_response
             else:
                 return {}
+
+    def build_response(self, byte_list):
+
+        packet = {}
+        packet['ubx_class'] = byte_list[0]
+        packet['ubx_id'] = byte_list[1]
+        packet['ubx_length_lsb'] = byte_list[2]
+        packet['ubx_length_msb'] = byte_list[3]
+        packet['ubx_length'] = (byte_list[3] << 8) | byte_list[2]
+        packet['payload'] = byte_list[4:-3]
+        packet['ubx_checkA'] = byte_list[-2]
+        packet['ubx_checkB'] = byte_list[-1]
+
+        return packet
+
+    def read_ublox_stream(self):
+
+        with serial.Serial(self.port_settings.get('port'),
+                           self.port_settings.get('baud'),
+                           timeout=self.port_settings.get('timemout')) as ser:
+
+        
+            ublox_char = ser.read()
+            attempts = 5; 
+            for i in range(attempts): 
+                if ublox_char is not None: 
+                    return ublox_char
+
+            return False
+
+    def get_ublox_stream(self, ublox_data):
+        for i in range(ublox_data):
+            pass
+
+    def pipe_out(self, outgoing):
+        pass
 
