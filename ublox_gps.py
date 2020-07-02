@@ -247,10 +247,25 @@ class UbloxGps(object):
 
                 self.ubx_packet_ack['valid'] = ubc.SFE_UBLOX_PACKET_VALIDITY_VALID
 
-               if self.ubx_packet_ack['class'] == requested_class and\
-                  self.ubx_packet_ack['id'] == requested_id and\
-                  self.ubx_packet_ack['payload'][1] == requested_id: 
+                if self.ubx_packet_ack['class'] == requested_class and\
+                   self.ubx_packet_ack['id'] == requested_id:
 
+                    self.ubx_packet_ack['class_id_match'] == ubc.SFE_UBLOX_PACKET_VALIDITY_VALID
+
+                elif self.ubx_packet_ack['class'] == ubc.UBX_CLASS_ACK and\
+                     self.ubx_packet_ack['id'] == ubc.UBX_ACK_ACK and\
+                     self.ubx_packet_ack['payload'][0] == requested_class and\
+                     self.ubx_packet_ack['payload'][1] == requested_id:
+
+                    self.ubx_packet_ack['class_id_match'] == ubc.SFE_UBLOX_PACKET_VALIDITY_VALID
+
+                elif self.ubx_packet_ack['class'] == ubc.UBX_CLASS_ACK and\
+                     self.ubx_packet_ack['id'] == ubc.UBX_ACK_ACK and\
+                     self.ubx_packet_ack['payload'][0] == requested_class and\
+                     self.ubx_packet_ack['payload'][1] == requested_id:
+
+                    self.ubx_packet_ack['class_id_match'] == ubc.SFE_UBLOX_PACKET_VALIDITY_VALID
+                         
 
     def process_NMEA(self, incoming_data):
         self.comm_inter.pipe_out(incoming_data) 
