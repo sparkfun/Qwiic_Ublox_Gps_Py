@@ -70,7 +70,7 @@ gps_nanosecond = 0
 
 latitude = 0          # Degrees * 10^-7 (more accurate than floats)
 longitude = 0         # Degrees * 10^-7 (more accurate than floats)
-altitude = 0          # Number of mm above ellipsoid
+altitude = 0          # Number of mm above elipsoid
 altitude_MSL = 0      # Number of mm above Mean Sea Level
 SIV = 0               # Number of satellites used in position solution
 fix_type = 0          # Tells us when we have a solution aka lock
@@ -83,9 +83,13 @@ version_high = 0
 
 time_of_week = 0
 high_res_latitude = 0
+high_res_latitude_Hp = 0
 high_res_longitude = 0
+high_res_longitude_Hp = 0
 elipsoid = 0
+elipsoid_Hp = 0
 mean_sea_level = 0
+mean_sea_level_Hp = 0
 geo_id_separation = 0
 horizontal_accuracy = 0
 vertical_accuracy = 0
@@ -101,73 +105,74 @@ new_sentence_flag = True
 
 # Dictionaries that hold packets to send to GPS unit
 ubx_message = {
-    "ubx_class" : None,
-    "ubx_id" : None,
-    "ubx_length" : None,
-    "ubx_payload" : [], #list of bytes
-    "ubx_checkA" : None,
-    "ubx_checkB" : None,
-    "ubx_check_pass": False,
+    "class" : None,
+    "id" : None,
+    "length" : None,
+    "payload" : [], #list of bytes
+    "checkA" : None,
+    "checkB" : None,
+    "check_pass": False,
     "counter": None,
-    "start" : None
+    "start_spot" : None
 }
 
 ubx_message_buffer = {
-    "ubx_class" : None,
-    "ubx_id" : None,
-    "ubx_length" : None,
-    "ubx_payload" : [], #list of bytes
-    "ubx_checkA" : None,
-    "ubx_checkB" : None,
-    "ubx_check_pass": False,
+    "class" : None,
+    "id" : None,
+    "length" : None,
+    "payload" : [], #list of bytes
+    "checkA" : None,
+    "checkB" : None,
+    "check_pass": False,
     "counter": None,
-    "start" : None
+    "start_spot" : None
 }
-ublox_packet_cfg = {
 
-    'ubx_class'     : None,
-    'ubx_id'        : None,
-    'ubx_length'    : None,
-    'ubx_payload'   : Nonepayload_config,
-    'ubx_checkA'    : None,
-    'ubx_checkB'    : None,
-    'ubx_check_pass': False,
+ubx_packet_cfg = {
+
+    'class'     : None,
+    'id'        : None,
+    'length'    : None,
+    'payload'   : Nonepayload_config,
+    'checkA'    : None,
+    'checkB'    : None,
+    'check_pass': False,
     'counter'       : None,
-    'start'         : None,
+    'start_spot'         : None,
     'valid'         : False,
     'class_id_match'         : False
 }
 
-ublox_packet_ack = {
+ubx_packet_ack = {
 
-    'ubx_class'      : None,
-    'ubx_id'         : None,
-    'ubx_length'     : None,
-    'ubx_payload'    : payload_ack,
-    'ubx_checkA'     : None,
-    'ubx_checkB'     : None,
-    'ubx_check_pass' : False,
+    'class'      : None,
+    'id'         : None,
+    'length'     : None,
+    'payload'    : payload_ack,
+    'checkA'     : None,
+    'checkB'     : None,
+    'check_pass' : False,
     'counter'        : None,
-    'start'          : None,
+    'start_spot'          : None,
     'valid'          : False,
     'class_id_match': False
 }
 
 is_module_queried = {
 
-    'GPS_iTOW'         : True,
-    'GPS_year'         : True,
-    'GPS_month'        : True,
-    'GPS_day'          : True,
-    'GPS_hour'         : True,
-    'GPS_minute'       : True,
-    'GPS_second'       : True,
-    'GPS_nanosecond'   : True,
-    'All'              : True,
-    'Longitude'        : True,
-    'Latitude'         : True,
-    'Altitude'         : True,
-    'Altitude_MSL'     : True,
+    'gps_iTOW'         : True,
+    'gps_year'         : True,
+    'gps_month'        : True,
+    'gps_day'          : True,
+    'gps_hour'         : True,
+    'gps_minute'       : True,
+    'gps_second'       : True,
+    'gps_nanosecond'   : True,
+    'all'              : True,
+    'longitude'        : True,
+    'latitude'         : True,
+    'altitude'         : True,
+    'altitude_MSL'     : True,
     'SIV'              : True,
     'fix_type'         : True,
     'carrier_solution' : True,
@@ -179,10 +184,10 @@ is_module_queried = {
 
 is_high_res_module_queried = {
 
-    'All'                 : True,
+    'all'                 : True,
     'time_of_week'        : True,
-    'Latitude'            : True,
-    'Longitude'           : True,
+    'latitude'            : True,
+    'longitude'           : True,
     'elipsoid'            : True,
     'mean_sea_level'      : True,
     'geo_id_separation'   : True,
@@ -217,20 +222,18 @@ relative_pos_info = {
 
 gnss_messages = {
 
-    'Time'           : 0,
-    'Latitude'       : 0.0,
-    'Lat'            : 0.0,
-    'Lat_Direction'  : "",
-    'Longitude'      : 0.0,
-    'Long'            : 0.0,
-    'Long_Direction' : "",
-    'Altitude'       : 0.0,
-    'Altitude_Units' : "",
-    'Sat_Number'     : 0,
-    'Geo_Separation' : 0,
-    'Geo_Sep_Units'  : "",
-    'Data_Age'       : 0,
-    'Ref_Station_ID' : 0
+    'time'           : 0,
+    'latitude'       : 0.0,
+    'lat_direction'  : "",
+    'longitude'      : 0.0,
+    'long_direction' : "",
+    'altitude'       : 0.0,
+    'altitude_units' : "",
+    'sat_number'     : 0,
+    'geo_separation' : 0,
+    'geo_sep_units'  : "",
+    'data_age'       : 0,
+    'ref_station_ID' : 0
 }
 
 # Lists of various settings:
