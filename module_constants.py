@@ -184,15 +184,19 @@ is_module_queried = {
 
 is_high_res_module_queried = {
 
-    'all'                 : True,
-    'time_of_week'        : True,
-    'latitude'            : True,
-    'longitude'           : True,
-    'elipsoid'            : True,
-    'mean_sea_level'      : True,
-    'geo_id_separation'   : True,
-    'horizontal_accuracy' : True,
-    'vertical_accuracy'   : True
+    'all'                   : True,
+    'time_of_week'          : True,
+    'high_res_latitude'     : True,
+    'high_res_longitutde'   : True,
+    'elipsoid'              : True,
+    'mean_sea_level'        : True,
+    'geo_id_separation'     : True,
+    'horizontal_accuracy'   : True,
+    'vertical_accuracy'     : True,
+    'elipsoid_Hp'           : True,
+    'mean_sea_level_Hp'     : True,
+    'high_res_latitude_Hp'  : True,
+    'high_res_longitutde_Hp': True
 }
 
 # Relative Positioning Info in NED frame specific controls.

@@ -118,16 +118,27 @@ class UbloxGps(object):
     def get_altitude(self):
         return True
     
-    def byte_mill(self):
-        passed_char = self.comm_inter.read_ublox_stream()
-        self.process(passed_char)
-        return(passed_char)
+    def check_ublox(self, incoming_ubx_packet = None, requested_class = None,
+                    requested_id  = None):
+
+        if incoming_ubx_packet is None:
+            incoming_ubx_packet = ubc.ubx_packet_cfg
+        if requested_class is None:
+            requested_class = ubc.UBX_CLASS_NAV
+        if requested_id is None:
+            requested_id = ubc.UBX_NAV_PVT
+
+        returned_char = self.comm_inter.read_ublox_stream()
+
+        self.process(returned_char, incoming_ubx_packet, requested_class, requested_id)
+
+        return True
 
             
     def process(self, ublox_data, incoming_ubx, requested_class, requested_id):
         
         # check what the byte is
-        if ubc.current_sentence == None or ubc.current_sentence == NMEA:
+        if ubc.current_sentence is None or ubc.current_sentence == ubc.NMEA:
 
             if ublox_data == ubc.UBX_SYNCH_1:
                 ubc.UBX_FRAME_COUNTER = 0
@@ -145,9 +156,9 @@ class UbloxGps(object):
 
         if ubc.current_sentence == ubc.UBX: 
             if ubc.UBX_FRAME_COUNTER == 0 and ublox_data != ubc.UBX_SYNCH_1: 
-                ubc.current_sentence == None
+                ubc.current_sentence is None
             elif ubc.UBX_FRAME_COUNTER == 1 and ublox_data != ubc.UBX_SYNCH_2: 
-                ubc.current_sentence == None
+                ubc.current_sentence is None
             elif ubc.UBX_FRAME_COUNTER == 2: 
                 ubc.ubx_message_buffer['class'] = ublox_data  
                 ubc.ubx_message_buffer['checksum_A'] = 0
@@ -159,9 +170,9 @@ class UbloxGps(object):
                     if ubc.ubx_message_buffer['class'] == requested_class and \
                        ubc.ubx_message_buffer['id'] == requested_id:
 
-                        ubc.ubx_message['class'] = ubc.ubx_message_buffer['class']
-                        ubc.ubx_message['id'] = ubc.ubx_message_buffer['id']
-                        ubc.ubx_message['counter'] = ubc.ubx_message_buffer['counter']
+                        incoming_ubx['class'] = ubc.ubx_message_buffer['class']
+                        incoming_ubx['id'] = ubc.ubx_message_buffer['id']
+                        incoming_ubx['counter'] = ubc.ubx_message_buffer['counter']
 
                     else:
                         ubc.IGNORE_PAYLOAD = True
@@ -208,7 +219,7 @@ class UbloxGps(object):
             
             # Clean this up
             if self.active_packet_buffer == ubc.SFE_UBLOX_PACKET_PACKETACK:
-                self.process_UBX(ublox_data, ubc.ubx_packet_ack, requested_class, requested_id) # modified but ignoring
+                self.process_UBX(ublox_data, ubc.ubx_packet_ack, requested_class, requested_id) 
             elif self.active_packet_buffer == ubc.SFE_UBLOX_PACKET_PACKETCFG:
                 self.process_UBX(ublox_data, ubc.ubx_packet_cfg, requested_class, requested_id)
             else: 
@@ -240,7 +251,7 @@ class UbloxGps(object):
         elif incoming_ubx['counter'] == incoming_ubx['len'] + 5:  
             incoming_ubx['checkB'] = incoming_data
             
-            ubc.current_sentence == None
+            ubc.current_sentence = None
 
             if incoming_ubx['checkA'] == ubc.rolling_checksum_A and\
                incoming_ubx['checkB'] == ubc.rolling_checksum_B:
@@ -266,7 +277,7 @@ class UbloxGps(object):
 
                     incoming_ubx['class_id_match'] == ubc.SFE_UBLOX_PACKET_NOTACKNOWLEDGED
                 
-                if ubc.IGNORE_PAYLOAD == False:
+                if ubc.IGNORE_PAYLOAD is False:
                     self.process_UBX_Packet(incoming_ubx)
             else: #Checksum Failure
                 incoming_ubx['valid'] = SFE_UBLOX_PACKET_VALIDITY_NOT_VALID
@@ -289,13 +300,13 @@ class UbloxGps(object):
                 start_spot = 0
             if incoming_ubx['counter'] - 4 >= start_spot:
                 if ((incoming_ubx['counter'] - 4) - start_spot) < MAX_PAYLOAD_SIZE:
-                    if ubc.IGNORE_PAYLOAD == False: 
+                    if ubc.IGNORE_PAYLOAD is False: 
                         incoming_ubx['payload'][incoming_ubx['counter']- 4 - start_spot] = incoming_data
     
         incoming_ubx['counter'] = incoming_ubx['counter'] + 1
 
         if incoming_ubx['counter'] == MAX_PAYLOAD_SIZE:
-            ubc.current_sentence == None
+            ubc.current_sentence = None
 
     def process_UBX_Packet(self, inc_ubx):
         if inc_ubx['class'] == UBX_CLASS_NAV:
@@ -354,39 +365,25 @@ class UbloxGps(object):
                 ubc.elipsoid = self.extract_long(ubc.ubx_packet_cfg, 16)
                 ubc.mean_sea_level = self.extract_long(ubc.ubx_packet_cfg, 20)
                 ubc.high_res_longitude_Hp = self.extract_long(ubc.ubx_packet_cfg, 24)
-                
-                ubc.fix_type = self.extract_byte(ubc.ubx_packet_cfg, 20 - start_spot) 
-                ubc.carrier_solution = self.extract_byte(ubc.ubx_packet_cfg, 21 - start_spot) >> 6
-                ubc.SIV = self.extract_byte(ubc.ubx_packet_cfg, 23 - start_spot)
-                ubc.longitude = self.extract_long(ubc.ubx_packet_cfg, 24 - start_spot)
-                ubc.latitude = self.extract_long(ubc.ubx_packet_cfg, 28 - start_spot)
-                ubc.altitude = self.extract_long(ubc.ubx_packet_cfg, 32 - start_spot)
-                ubc.altitude_MSL = self.extract_long(ubc.ubx_packet_cfg, 36 - start_spot)
-                ubc.ground_speed = self.extract_long(ubc.ubx_packet_cfg, 60 - start_spot)
-                ubc.heading_motion = self.extract_long(ubc.ubx_packet_cfg, 64 - start_spot)
-                ubc.pDOP = self.extract_int(ubc.ubx_packet_cfg, 76 - start_spot)
+                ubc.high_res_latitude_Hp = self.extract_long(ubc.ubx_packet_cfg, 25)
+                ubc.elipsoid_Hp= self.extract_long(ubc.ubx_packet_cfg, 26)
+                ubc.mean_sea_level_Hp = self.extract_long(ubc.ubx_packet_cfg, 27)
+                ubc.horizontal_accuracy = self.extract_long(ubc.ubx_packet_cfg, 28)
+                ubc.vertical_accuracy = self.extract_long(ubc.ubx_packet_cfg, 32)
 
-                ubc.is_module_queried['gps_iTOW'] = True
-                ubc.is_module_queried['gps_iTOW'] = True
-                ubc.is_module_queried['gps_year'] = True       
-                ubc.is_module_queried['gps_month'] = True       
-                ubc.is_module_queried['gps_day'] = True         
-                ubc.is_module_queried['gps_hour'] = True        
-                ubc.is_module_queried['gps_minute'] = True      
-                ubc.is_module_queried['gps_second'] = True      
-                ubc.is_module_queried['gps_nanosecond'] = True  
-                ubc.is_module_queried['all'] = True             
-                ubc.is_module_queried['longitude'] = True       
-                ubc.is_module_queried['latitude'] = True        
-                ubc.is_module_queried['altitude'] = True        
-                ubc.is_module_queried['altitude_MSL'] = True    
-                ubc.is_module_queried['SIV'] = True             
-                ubc.is_module_queried['fix_type'] = True        
-                ubc.is_module_queried['carrier_solution'] = True
-                ubc.is_module_queried['ground_speed'] = True    
-                ubc.is_module_queried['heading_motion'] = True  
-                ubc.is_module_queried['pDOP'] = True            
-                ubc.is_module_queried['version_num'] = True     
+                ubc.is_high_res_module_queried['all'] = True
+                ubc.is_high_res_module_queried['time_of_week'] = True
+                ubc.is_high_res_module_queried['high_res_latitude'] = True
+                ubc.is_high_res_module_queried['high_res_longitutde'] = True
+                ubc.is_high_res_module_queried['elipsoid'] = True
+                ubc.is_high_res_module_queried['mean_sea_level'] = True
+                ubc.is_high_res_module_queried['geo_id_separation'] = True
+                ubc.is_high_res_module_queried['horizontal_accuracy'] = True
+                ubc.is_high_res_module_queried['vertical_accuracy'] = True
+                ubc.is_high_res_module_queried['elipsoid_Hp'] = True
+                ubc.is_high_res_module_queried['mean_sea_level_Hp'] = True
+                ubc.is_high_res_module_queried['high_res_latitude_Hp']  = True
+                ubc.is_high_res_module_queried['high_res_longitutde_Hp'] = True
 
     def process_NMEA(self, incoming_data):
         self.comm_inter.pipe_out(incoming_data) 

@@ -53,6 +53,7 @@
 import module_constants as ubc
 import serial
 import spidev
+import sys
 from time import sleep
 
 class UbloxSpi(object):
@@ -232,10 +233,8 @@ class UbloxSerial(object):
 
             return False
 
-    def get_ublox_stream(self, ublox_data):
-        for i in range(ublox_data):
-            pass
 
     def pipe_out(self, outgoing):
-        pass
+        with open(sys.stdout) as out:
+            out.write(outgoing)
 
