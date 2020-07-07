@@ -139,7 +139,7 @@ class UbloxSerial(object):
         else:
             self.port_settings = {
                 'port': '/dev/serial0',
-                'baud': 9600,
+                'baud': 38400,
                 'timeout': 1
             } 
 
@@ -225,10 +225,8 @@ class UbloxSerial(object):
                            timeout=self.port_settings.get('timemout')) as ser:
 
         
-            attempts = 5; 
             ublox_char = ser.read()
             if ublox_char:
-                sys.stdout.write(ublox_char)
                 return(ublox_char)
 
 

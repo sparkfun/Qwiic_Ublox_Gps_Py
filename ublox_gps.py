@@ -140,6 +140,7 @@ class UbloxGps(object):
         # check what the byte is
         if ubc.current_sentence is None or ubc.current_sentence == ubc.NMEA:
             if hex(ord(ublox_data)) == ubc.UBX_SYNCH_1:
+                print("yes")
                 ubc.UBX_FRAME_COUNTER = 0
                 ubc.current_sentence = ubc.UBX
                 ubc.ubx_message_buffer['counter'] = 0
@@ -155,9 +156,9 @@ class UbloxGps(object):
 
         if ubc.current_sentence == ubc.UBX: 
             print("Second if statment")
-            if ubc.UBX_FRAME_COUNTER == 0 and hex(ublox_data) != ubc.UBX_SYNCH_1: 
+            if ubc.UBX_FRAME_COUNTER == 0 and hex(ord(ublox_data)) != ubc.UBX_SYNCH_1: 
                 ubc.current_sentence is None
-            elif ubc.UBX_FRAME_COUNTER == 1 and hex(ublox_data) != ubc.UBX_SYNCH_2: 
+            elif ubc.UBX_FRAME_COUNTER == 1 and hex(ord(ublox_data)) != ubc.UBX_SYNCH_2: 
                 ubc.current_sentence is None
             elif ubc.UBX_FRAME_COUNTER == 2: 
                 ubc.ubx_message_buffer['class'] = ublox_data  
@@ -231,10 +232,8 @@ class UbloxGps(object):
             ubc.UBX_FRAME_COUNTER = ubc.UBX_FRAME_COUNTER + 1            
 
         elif ubc.current_sentence == ubc.NMEA:
-            print('nmea')
             self.process_NMEA(ublox_data)
         elif ubc.current_sentence == ubc.RTCM:
-            print('rtcm')
             self.process_RTCM(ublox_data)
                 
 

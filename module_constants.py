@@ -242,8 +242,6 @@ gnss_messages = {
 
 # Lists of various settings:
 
-NMEA_BEGIN = '$'
-RTCM_BEGIN_VAL = 0xD3
 # u-blox Register List
 UBX_SYNCH_1    = 0xB5
 UBX_SYNCH_2    = 0x62
@@ -364,6 +362,8 @@ COMM_TYPE_SPI = 3
 outgoing_data_channel = None
 
 # Class flags
+NMEA_BEGIN = '$'
+RTCM_BEGIN_VAL = 0xD3
 _RPiCheck = False
 IGNORE_PAYLOAD = False
 SFE_UBLOX_PACKET_PACKETCFG = 0
