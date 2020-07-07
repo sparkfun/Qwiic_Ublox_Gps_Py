@@ -133,7 +133,7 @@ ubx_packet_cfg = {
     'class'     : None,
     'id'        : None,
     'length'    : None,
-    'payload'   : Nonepayload_config,
+    'payload'   : None,
     'checkA'    : None,
     'checkB'    : None,
     'check_pass': False,

@@ -225,16 +225,16 @@ class UbloxSerial(object):
                            timeout=self.port_settings.get('timemout')) as ser:
 
         
-            ublox_char = ser.read()
             attempts = 5; 
-            for i in range(attempts): 
-                if ublox_char is not None: 
-                    return ublox_char
+            ublox_char = ser.read()
+            if ublox_char:
+                sys.stdout.write(ublox_char)
+                return(ublox_char)
+
 
             return False
 
 
     def pipe_out(self, outgoing):
-        with open(sys.stdout) as out:
-            out.write(outgoing)
+        sys.stdout.write(outgoing)
 

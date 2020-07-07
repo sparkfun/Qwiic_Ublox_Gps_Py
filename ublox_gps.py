@@ -139,8 +139,7 @@ class UbloxGps(object):
         
         # check what the byte is
         if ubc.current_sentence is None or ubc.current_sentence == ubc.NMEA:
-
-            if ublox_data == ubc.UBX_SYNCH_1:
+            if hex(ord(ublox_data)) == ubc.UBX_SYNCH_1:
                 ubc.UBX_FRAME_COUNTER = 0
                 ubc.current_sentence = ubc.UBX
                 ubc.ubx_message_buffer['counter'] = 0
@@ -155,9 +154,10 @@ class UbloxGps(object):
                 pass # Missed something
 
         if ubc.current_sentence == ubc.UBX: 
-            if ubc.UBX_FRAME_COUNTER == 0 and ublox_data != ubc.UBX_SYNCH_1: 
+            print("Second if statment")
+            if ubc.UBX_FRAME_COUNTER == 0 and hex(ublox_data) != ubc.UBX_SYNCH_1: 
                 ubc.current_sentence is None
-            elif ubc.UBX_FRAME_COUNTER == 1 and ublox_data != ubc.UBX_SYNCH_2: 
+            elif ubc.UBX_FRAME_COUNTER == 1 and hex(ublox_data) != ubc.UBX_SYNCH_2: 
                 ubc.current_sentence is None
             elif ubc.UBX_FRAME_COUNTER == 2: 
                 ubc.ubx_message_buffer['class'] = ublox_data  
@@ -217,19 +217,24 @@ class UbloxGps(object):
                         #Add something here
                         pass
             
-            # Clean this up
             if self.active_packet_buffer == ubc.SFE_UBLOX_PACKET_PACKETACK:
+                print('process_ubx0')
                 self.process_UBX(ublox_data, ubc.ubx_packet_ack, requested_class, requested_id) 
             elif self.active_packet_buffer == ubc.SFE_UBLOX_PACKET_PACKETCFG:
+                print('process_ubx1')
                 self.process_UBX(ublox_data, ubc.ubx_packet_cfg, requested_class, requested_id)
             else: 
+                print('process_ubx2')
                 self.process(ublox_data, ubc.ubx_message_buffer, requested_class, requested_id)
 
+            print("Counting frames")
             ubc.UBX_FRAME_COUNTER = ubc.UBX_FRAME_COUNTER + 1            
 
-        elif ubc.current_sentence == NMEA:
+        elif ubc.current_sentence == ubc.NMEA:
+            print('nmea')
             self.process_NMEA(ublox_data)
-        elif ubc.current_sentence == RTCM:
+        elif ubc.current_sentence == ubc.RTCM:
+            print('rtcm')
             self.process_RTCM(ublox_data)
                 
 
