@@ -28,8 +28,8 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
     core.Message(0x59, 'PT2', [
         core.Field('version', 'U1'),
         core.BitField('activate', 'X1', [
-            core.Field('enable', 0, 1),
-            core.Field('lnaMode', 6, 8),
+            core.Flag('enable', 0, 1),
+            core.Flag('lnaMode', 6, 8),
         ]),
         core.Field('extint', 'U1'),
         core.Field('reAcqCno', 'U1'),
@@ -44,19 +44,19 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
     ]),
     core.Message(0x04, 'RST', [
         core.BitField('navBbrMask', 'X2', [
-            core.Field('eph', 0, 1),
-            core.Field('alm', 1, 2),
-            core.Field('health', 2, 3),
-            core.Field('klob', 3, 4),
-            core.Field('pos', 4, 5),
-            core.Field('clkd', 5, 6),
-            core.Field('osc', 6, 7),
-            core.Field('utc', 7, 8),
-            core.Field('rtc', 8, 9),
-            core.Field('sfdr', 11, 12),
-            core.Field('vmon', 12, 13),
-            core.Field('tct', 13, 14),
-            core.Field('aop', 15, 16),
+            core.Flag('eph', 0, 1),
+            core.Flag('alm', 1, 2),
+            core.Flag('health', 2, 3),
+            core.Flag('klob', 3, 4),
+            core.Flag('pos', 4, 5),
+            core.Flag('clkd', 5, 6),
+            core.Flag('osc', 6, 7),
+            core.Flag('utc', 7, 8),
+            core.Flag('rtc', 8, 9),
+            core.Flag('sfdr', 11, 12),
+            core.Flag('vmon', 12, 13),
+            core.Flag('tct', 13, 14),
+            core.Flag('aop', 15, 16),
         ]),
         core.Field('resetMode', 'U1'),
         core.PadByte(),
@@ -75,8 +75,8 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
         core.Field('version', 'U1'),
         core.Field('usbPinState', 'U1'),
         core.BitField('layers', 'X1', [
-            core.Field('bbr', 1, 2),
-            core.Field('flash', 2, 3),
+            core.Flag('bbr', 1, 2),
+            core.Flag('flash', 2, 3),
         ]),
         core.PadByte(repeat=2),
         core.RepeatedBlock('RB', [
@@ -94,9 +94,9 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
     core.Message(0x8a, 'VALSET', [ # With Tranaction 
         core.Field('version', 'U1'),
         core.BitField('layers', 'X1', [
-            core.Field('ram', 0, 1),
-            core.Field('bbr', 1, 2),
-            core.Field('flash', 2, 3),
+            core.Flag('ram', 0, 1),
+            core.Flag('bbr', 1, 2),
+            core.Flag('flash', 2, 3),
         ]),
         core.Field('transaction', 'U1'),
         core.Field('action', 'U1'),
@@ -105,6 +105,16 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
             core.Field('cfgData','U4'),
         ]),
     ]),    
+])
+
+NAV_CLS = core.Cls(0x10, 'ESF', [
+    core.Message(0x14, 'ALG', [
+        core.Field('iTOW','U4'),    
+        core.Field('version','U1'),    
+        core.BitField('flags', 'U1', [
+            core.Flag
+        ]),
+    ]),
 ])
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
@@ -188,7 +198,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('ecefYHp', 'I1'),
         core.Field('ecefZHp', 'I1'),
         core.BitField('flags', 'X1', [
-            core.Field('invalidEcef', 0 ,1),
+            core.Flag('invalidEcef', 0 ,1),
         ]),
         core.Field('pAcc', 'U4'),
 
@@ -197,7 +207,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
         core.BitField('flags', 'X1', [
-            core.Field('invalidLh', 0 ,1),
+            core.Flag('invalidLh', 0 ,1),
         ]),
         core.Field('iTOW', 'U4'),
         core.Field('lon', 'I4'),
