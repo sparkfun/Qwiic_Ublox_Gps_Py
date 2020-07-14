@@ -111,10 +111,102 @@ NAV_CLS = core.Cls(0x10, 'ESF', [
     core.Message(0x14, 'ALG', [
         core.Field('iTOW','U4'),    
         core.Field('version','U1'),    
-        core.BitField('flags', 'U1', [
-            core.Flag
+        core.BitField('flags', 'X1', [
+            core.Flag('autoMntAlgOn', 0, 1),
+            core.Flag('status', 1, 4),
+
+        ]),
+        core.BitField('error', 'X1', [
+            core.Flag('tiltAlgError', 0, 1),
+            core.Flag('yawAlgoError', 1, 2),
+            core.Flag('angleError', 2, 3),
+        ]),
+        core.PadByte(),
+        core.Field('yaw','U4'), 
+        core.Field('pitch','I2'), 
+        core.Field('roll','I2'), 
+    ]),
+    core.Message(0x15, 'INS', [
+        core.BitField('biltfield0', 'X4', [
+            core.Flag('version', 0, 8),
+            core.Flag('xAngRateValid', 8, 9),
+            core.Flag('yAngRateValid', 9, 10),
+            core.Flag('zAngRateValid', 10, 11),
+            core.Flag('xAccelValid', 11, 12),
+            core.Flag('yAccelValid', 12, 13),
+            core.Flag('zAccelValid', 13, 14),
+        ]),
+        core.PadByte(repeat=4),
+        core.Field('iTOW','U4'),
+        core.Field('xAngRate','I4'),
+        core.Field('yAngRate','I4'),
+        core.Field('zAngRate','I4'),
+        core.Field('xAccel','I4'),
+        core.Field('yAccel','I4'),
+        core.Field('zAccel','I4'),
+    ]),
+    core.Message(0x02, 'MEAS', [
+        core.Field('timeTag','U4'),
+        core.BitField('flags', 'X2', [
+            core.Flag('timeMarkSent', 0, 2),
+            core.Flag('timeMarkEdge', 2, 3),
+            core.Flag('calibTtagValid', 3, 4),
+            core.Flag('numMeas', 11, 16),
+        ]),
+        core.Field('id','U2'),
+        core.RepeatedBlock('RB', [
+            core.BitField('data','X4', [
+                core.Flag('dataField', 0, 24),
+                core.Flag('dataType', 24, 30),
+            ]),
+            core.Field('calibTtag','U4'),
         ]),
     ]),
+    core.Message(0x03, 'RAW', [
+        core.PadByte(repeat=4),
+        core.RepeatedBlock('RB', [
+            core.BitField('data','X4', [
+                core.Flag('dataField', 0, 24),
+                core.Flag('dataType', 24, 30),
+            ]),
+            core.Field('sTag','U4'),
+        ]),
+    ]),
+    core.Message(0x13, 'RESETALG', [
+    ]),
+    core.Message(0x10, 'STATUS', [
+        core.Field('iTOW','U4'),
+        core.Field('version','U1'),
+        core.BitField('initStatus1', 'X1', [
+            core.Flag('wtInitStatus', 0, 2),
+            core.Flag('mntAlgStatus', 2, 5),
+            core.Flag('insInitStatus', 5, 7),
+        ]),
+        core.BitField('initStatus2', 'X1', [
+            core.Flag('imuInitStatus', 0, 2),
+        ]),
+        core.PadByte(repeat=5),
+        core.Field('fusionMode','U1'),
+        core.PadByte(repeat=2),
+        core.Field('numSens','U1'),
+        core.BitField('senStatus1', 'X1', [
+            core.Flag('type', 0, 6),
+            core.Flag('used', 6, 7),
+            core.Flag('ready', 7, 8),
+        ]),
+        core.BitField('senStatus2', 'X1', [
+            core.Flag('calibStatus', 0, 2),
+            core.Flag('timeStatus', 2, 4),
+        ]),
+        core.Field('freq', 'U1'),
+        core.BitField('faults', 'X1', [
+            core.Flag('badMeas', 0, 1),
+            core.Flag('badTTag', 1, 2),
+            core.Flag('missingMeas', 2, 3),
+            core.Flag('noisyMeas', 3, 4),
+        ]),
+    ]),
+    
 ])
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
