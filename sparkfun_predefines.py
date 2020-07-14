@@ -107,14 +107,13 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
     ]),    
 ])
 
-NAV_CLS = core.Cls(0x10, 'ESF', [
+ESF_CLS = core.Cls(0x10, 'ESF', [
     core.Message(0x14, 'ALG', [
         core.Field('iTOW','U4'),    
         core.Field('version','U1'),    
         core.BitField('flags', 'X1', [
             core.Flag('autoMntAlgOn', 0, 1),
             core.Flag('status', 1, 4),
-
         ]),
         core.BitField('error', 'X1', [
             core.Flag('tiltAlgError', 0, 1),
@@ -209,7 +208,7 @@ NAV_CLS = core.Cls(0x10, 'ESF', [
     
 ])
 
-NAV_CLS = core.Cls(0x04, 'INF', [
+INF_CLS = core.Cls(0x04, 'INF', [
     core.Message(0x04, 'DEBUG', [
         core.RepeatedBlock('RB', [
             core.Field('str','CH'),
@@ -236,6 +235,7 @@ NAV_CLS = core.Cls(0x04, 'INF', [
         ]),
     ]),
 ])
+
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x05, 'ATT', [
@@ -321,7 +321,6 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Flag('invalidEcef', 0 ,1),
         ]),
         core.Field('pAcc', 'U4'),
-
     ]),
     core.Message(0x14, 'HPPOSLLH', [
         core.Field('version', 'U1'),
