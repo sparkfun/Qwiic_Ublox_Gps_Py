@@ -9,17 +9,109 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ]),
-    core.Message(0x01, 'NAK', [
+    core.Message(0x00, 'NAK', [
         core.Field('clsID', 'U1'),
         core.Field('msgID', 'U1'),
     ])
+])
+
+CFG_CLS = core.Cls(0x06, 'CFG', [
+    core.Message(0x41, 'OTP', [
+    ]),
+    core.Message(0x2C, 'PIO', [
+        core.Field('version', 'U1'),
+        core.Field('request', 'U1'),
+        core.RepeatedBlock('RB', [ 
+            core.Field('requiredPinState', 'U1'),
+        ]) 
+    ]),    
+    core.Message(0x59, 'PT2', [
+        core.Field('version', 'U1'),
+        core.BitField('activate', 'X1', [
+            core.Field('enable', 0, 1),
+            core.Field('lnaMode', 6, 8),
+        ]),
+        core.Field('extint', 'U1'),
+        core.Field('reAcqCno', 'U1'),
+        core.Field('refFreq ', 'U4'),
+        core.Field('refFreqAcc ', 'U4'),
+        core.RepeatedBlock('RB', [ 
+            core.Field('gnssId', 'U1'),
+            core.Field('svId', 'U1'),
+            core.Field('sigId', 'U1'),
+            core.Field('accsId', 'U1'),
+        ]) 
+    ]),
+    core.Message(0x04, 'RST', [
+        core.BitField('navBbrMask', 'X2', [
+            core.Field('eph', 0, 1),
+            core.Field('alm', 1, 2),
+            core.Field('health', 2, 3),
+            core.Field('klob', 3, 4),
+            core.Field('pos', 4, 5),
+            core.Field('clkd', 5, 6),
+            core.Field('osc', 6, 7),
+            core.Field('utc', 7, 8),
+            core.Field('rtc', 8, 9),
+            core.Field('sfdr', 11, 12),
+            core.Field('vmon', 12, 13),
+            core.Field('tct', 13, 14),
+            core.Field('aop', 15, 16),
+        ]),
+        core.Field('resetMode', 'U1'),
+        core.PadByte(),
+    ]),    
+    core.Message(0x64, 'SPT', [
+        core.Field('version', 'U1'),
+        core.PadByte(),
+        core.Field('sensorId', 'U2'),
+        core.PadByte(repeat=8),
+    ]),    
+    core.Message(0x58, 'USBTEST', [
+        core.Field('version', 'U1'),
+        core.Field('usbPinState', 'U1'),
+    ]),    
+    core.Message(0x8c, 'VALDEL', [ # With transaction
+        core.Field('version', 'U1'),
+        core.Field('usbPinState', 'U1'),
+        core.BitField('layers', 'X1', [
+            core.Field('bbr', 1, 2),
+            core.Field('flash', 2, 3),
+        ]),
+        core.PadByte(repeat=2),
+        core.RepeatedBlock('RB', [
+            core.Field('keys','U4'),
+        ]),
+    ]),    
+    core.Message(0x8b, 'VALGET', [ # Get configuration items
+        core.Field('version', 'U1'),
+        core.Field('layer', 'U1'),
+        core.Field('position', 'U2'),
+        core.RepeatedBlock('RB', [
+            core.Field('cfgData','U4'),
+        ]),
+    ]),    
+    core.Message(0x8a, 'VALSET', [ # With Tranaction 
+        core.Field('version', 'U1'),
+        core.BitField('layers', 'X1', [
+            core.Field('ram', 0, 1),
+            core.Field('bbr', 1, 2),
+            core.Field('flash', 2, 3),
+        ]),
+        core.Field('transaction', 'U1'),
+        core.Field('action', 'U1'),
+        core.PadByte(),
+        core.RepeatedBlock('RB', [
+            core.Field('cfgData','U4'),
+        ]),
+    ]),    
 ])
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x05, 'ATT', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
-        core.PadByte(repeat=2),
+        core.PadByte(repeat=3),
         core.Field('roll', 'I4'),
         core.Field('pitch', 'I4'),
         core.Field('heading', 'I4'),
