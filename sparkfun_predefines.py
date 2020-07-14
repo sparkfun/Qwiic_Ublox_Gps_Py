@@ -16,12 +16,6 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
 ])
 
 NAV_CLS = core.Cls(0x01, 'NAV', [
-    core.Message(0x60, 'AOPSTATUS', [
-        core.Field('iTOW', 'U4'),
-        core.Field('aopCfg', 'U1'),
-        core.Field('status', 'U1'),
-        core.PadByte(repeat=9),
-    ]),
     core.Message(0x05, 'ATT', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
@@ -313,25 +307,32 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x43, 'SIG', [ #here
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
+        core.Field('numSigs', 'U1'),
         core.PadByte(repeat=2),
-        core.Field('gmsLon', 'I4'),
-        core.Field('gmsLat', 'I4'),
-        core.Field('gmsCode', 'U1'),
-        core.Field('qzssSvId', 'U1'),
-        core.BitField('serviceFlags', 'X1', [
-            core.Flag('gmsAvail', 0, 1),
-            core.Flag('qzssSvAvail', 1, 2),
-            core.Flag('testMode', 2, 3),
-        ]),
-        core.Field('cnt', 'U1'),
         core.RepeatedBlock('RB', [
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),
-            core.PadByte(repeat=3),
-            core.Field('prc', 'I2'),
-        ])
+            core.Field('sigId', 'U1'),
+            core.Field('freqId', 'U1'),
+            core.Field('prRes', 'I2'),
+            core.Field('cno', 'U1'),
+            core.Field('qualityInd', 'U1'),
+            core.Field('corrSource', 'U1'),
+            core.Field('ionoModel', 'U1'),
+            core.Field('sigFlags', 'X2', [
+                core.Flag('health', 0, 2),
+                core.Flag('prSmoothed', 2, 3),
+                core.Flag('prUsed', 3, 4),
+                core.Flag('crUsed', 4, 5),
+                core.Flag('doUsed', 5, 6),
+                core.Flag('prCorrUsed', 6, 7),
+                core.Flag('crCorrUsed', 7, 8),
+                core.Flag('doCorrUsed', 8, 9),
+            ]),
+        ]),
+            core.PadByte(repeate=4)
     ]),
-    core.Message(0x06, 'STATUS', [
+    core.Message(0x03, 'STATUS', [
         core.Field('iTOW', 'U4'),
         core.Field('gpsFix', 'U1'),
         core.BitField('flags', 'X1', [
@@ -342,43 +343,95 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         ]),
         core.BitField('fixStat', 'X1', [
             core.Flag('diffCorr', 0, 1),
+            core.Flag('caarSolnValid', 1, 2),
             core.Flag('mapMatching', 6, 8),
         ]),
         core.BitField('flags2', 'X1', [
             core.Flag('psmState', 0, 2),
             core.Flag('spoofDetState', 3, 5),
+            core.Flag('carSoln', 6, 8),
         ]),
         core.Field('ttff', 'U4'),
         core.Field('msss', 'U4'),
     ]),
-    core.Message(0x30, 'SVINFO', [
+    core.Message(0x24, 'TIMEBDS', [
         core.Field('iTOW', 'U4'),
-        core.Field('numCh', 'U1'),
-        core.BitField('globalFlags', 'X1', [
-            core.Flag('chipGen', 0, 3),
+        core.Field('SOW', 'U4'),
+        core.Field('fSOW', 'I4'),
+        core.Field('week', 'I2'),
+        core.Field('leapS', 'I1'),
+        core.BitField('valid', 'X1', [
+            core.Flag('sowValid', 0, 1),
+            core.Flag('weekValid', 1, 2),
+            core.Flag('leapSValid', 2, 3),
         ]),
-        core.PadByte(repeat=1),
-        core.RepeatedBlock('RB', [
-            core.Field('chn', 'U1'),
-            core.Field('svid', 'U1'),
-            core.BitField('flags', 'X1', [
-                core.Flag('svUsed', 0, 1),
-                core.Flag('diffCorr', 1, 2),
-                core.Flag('orbitAvail', 2, 3),
-                core.Flag('orbitEph', 3, 4),
-                core.Flag('unhealthy', 4, 5),
-                core.Flag('orbitAlm', 5, 6),
-                core.Flag('orbitAop', 6, 7),
-                core.Flag('smoothed', 7, 8),
-            ]),
-            core.BitField('quality', 'X1', [
-                core.Flag('qualityInd', 0, 4),
-            ]),
-            core.Field('cno', 'U1'),
-            core.Field('elev', 'I1'),
-            core.Field('azim', 'I2'),
-            core.Field('prRes', 'I4'),
+        core.Field('tAcc','U4'), 
+    ]),
+    core.Message(0x25, 'TIMEGAL', [
+        core.Field('iTOW', 'U4'),
+        core.Field('galTow', 'U4'),
+        core.Field('fGalTow', 'I4'),
+        core.Field('galWno', 'I2'),
+        core.Field('leapS', 'I1'),
+        core.BitField('valid', 'X1', [
+            core.Flag('galValid', 0, 1),
+            core.Flag('galWnoValid', 1, 2),
+            core.Flag('leapSValid', 2, 3),
         ]),
+        core.Field('tAcc','U4'), 
+    ]),
+    core.Message(0x23, 'TIMEGLO', [
+        core.Field('iTOW', 'U4'),
+        core.Field('TOD', 'U4'),
+        core.Field('fTOD', 'I4'),
+        core.Field('Nt', 'U2'),
+        core.Field('N4', 'U1'),
+        core.BitField('valid', 'X1', [
+            core.Flag('todValid', 0, 1),
+            core.Flag('dateValid', 1, 2),
+        ]),
+        core.Field('tAcc','U4'), 
+    ]),
+    core.Message(0x20, 'TIMEGPS', [
+        core.Field('iTOW', 'U4'),
+        core.Field('fTOW', 'I4'),
+        core.Field('week', 'I2'),
+        core.Field('leapS', 'I1'),
+        core.BitField('valid', 'X1', [
+            core.Flag('towValid', 0, 1),
+            core.Flag('weekValid', 1, 2),
+            core.Flag('leapSValid', 2, 3),
+        ]),
+        core.Field('tAcc','U4'), 
+    ]),
+    core.Message(0x25, 'TIMELS', [
+        core.Field('iTOW', 'U4'),
+        core.Field('version', 'U1'),
+        core.PadByte(repeat=3),
+        core.Field('srcOfCurrLs', 'U1'),
+        core.Field('currLs', 'I1'),
+        core.Field('srcOfLsChange', 'U1'),
+        core.Field('lsChange', 'I1'),
+        core.Field('timeToLsEvent', 'I4'),
+        core.Field('dateOfLsGpsWn', 'U2'),
+        core.PadByte(repeat=3),
+        core.BitField('valid', 'X1', [
+            core.Flag('validCurrLs', 0, 1),
+            core.Flag('validTimeToLsEvent', 1, 2),
+        ]),
+    ]),
+    core.Message(0x27, 'TIMEQZSS', [
+        core.Field('iTOW', 'U4'),
+        core.Field('qzssTow', 'U4'),
+        core.Field('fQzssTow', 'I4'),
+        core.Field('qzssWno', 'I2'),
+        core.Field('leapS', 'I1'),
+        core.BitField('valid', 'X1', [
+            core.Flag('qzssTowValid', 0, 1),
+            core.Flag('qzssWnoValid', 1, 2),
+            core.Flag('leapSValid', 2, 3),
+        ]),
+        core.Field('tAcc','U4'), 
     ]),
     core.Message(0x21, 'TIMEUTC', [
         core.Field('iTOW', 'U4'),
