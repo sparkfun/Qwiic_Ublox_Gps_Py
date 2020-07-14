@@ -1,4 +1,3 @@
-
 """Predefined message classes"""
 
 from . import core
@@ -46,15 +45,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('version', 'U1'),
         core.Field('posCovValid', 'U1'),
         core.Field('velCovValid', 'U1'),
-        core.Field('reserved0', 'U1'),# Added 9 reserved fields to retain byte offeset
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
-        core.Field('reserved0', 'U1'),
+        core.PadByte(repeat=9),
         core.Field('posCovNN', 'R4'),
         core.Field('posCovNE', 'R4'),
         core.Field('posCovND', 'R4'),
@@ -64,25 +55,9 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('velCovNN', 'R4'),
         core.Field('velCovNE', 'R4'),
         core.Field('velCovND', 'R4'),
-    ]),
-    core.Message(0x31, 'DGPS', [
-        core.Field('iTOW', 'U4'),
-        core.Field('age', 'I4'),
-        core.Field('baseId', 'I2'),
-        core.Field('baseHealth', 'I2'),
-        core.Field('numCh', 'U1'),
-        core.Field('status', 'U1'),
-        core.PadByte(repeat=1),
-        core.RepeatedBlock('RB', [
-            core.Field('svid', 'U1'),
-            core.BitField('flags', 'X1', [
-                core.Flag('channel', 0, 4),
-                core.Flag('dgpsUsed', 4, 5),
-            ]),
-            core.Field('ageC', 'U2'),
-            core.Field('prc', 'R4'),
-            core.Field('prrc', 'R4'),
-        ])
+        core.Field('velCovEE', 'R4'),
+        core.Field('velCovED', 'R4'),
+        core.Field('velCovDD', 'R4'),
     ]),
     core.Message(0x04, 'DOP', [
         core.Field('iTOW', 'U4'),
@@ -93,6 +68,14 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('hDOP', 'U2'),
         core.Field('nDOP', 'U2'),
         core.Field('eDOP', 'U2'),
+    ]),
+    core.Message(0x3d, 'EELL', [
+        core.Field('iTOW', 'U4'),
+        core.Field('version', 'U1'),
+        core.Field('reserved', 'U1'),
+        core.Field('errEllipseOrient', 'U2'),
+        core.Field('errEllipseMajor', 'U4'),
+        core.Field('errEllipseMinor', 'U4'),
     ]),
     core.Message(0x61, 'EOE', [
         core.Field('iTOW', 'U4'),
@@ -105,12 +88,12 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('combState', 'U1'),
         core.RepeatedBlock('RB', [
             core.Field('state', 'U1'),
-            core.PadByte(),
+            core.Field('id', 'U1'),
         ]),
     ]),
     core.Message(0x13, 'HPPOSECEF', [
         core.Field('version', 'U1'),
-        core.PadByte(repeat=2),
+        core.PadByte(repeat=3),
         core.Field('iTOW', 'U4'),
         core.Field('ecefX', 'I4'),
         core.Field('ecefY', 'I4'),
@@ -118,12 +101,18 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('ecefXHp', 'I1'),
         core.Field('ecefYHp', 'I1'),
         core.Field('ecefZHp', 'I1'),
-        core.PadByte(),
+        core.BitField('flags', 'X1', [
+            core.Field('invalidEcef', 0 ,1),
+        ]),
         core.Field('pAcc', 'U4'),
+
     ]),
     core.Message(0x14, 'HPPOSLLH', [
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
+        core.BitField('flags', 'X1', [
+            core.Field('invalidLh', 0 ,1),
+        ]),
         core.Field('iTOW', 'U4'),
         core.Field('lon', 'I4'),
         core.Field('lat', 'I4'),
@@ -136,19 +125,11 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('hAcc', 'U4'),
         core.Field('vAcc', 'U4'),
     ]),
-    core.Message(0x09, 'ODO', [
-        core.Field('version', 'U1'),
-        core.PadByte(repeat=2),
-        core.Field('iTOW', 'U4'),
-        core.Field('distance', 'U4'),
-        core.Field('totalDistance', 'U4'),
-        core.Field('distanceStd', 'U4'),
-    ]),
     core.Message(0x34, 'ORB', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
         core.Field('numSv', 'U1'),
-        core.PadByte(repeat=1),
+        core.PadByte(repeat=2),
         core.RepeatedBlock('RB', [
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),
@@ -206,7 +187,8 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.BitField('flags', 'X1', [
             core.Flag('gnssFixOK', 0, 1),
             core.Flag('diffSoln', 1, 2),
-            core.Flag('headVehValid', 2, 5),
+            core.Flag('psmState', 2, 5),
+            core.Flag('headVehValid', 5, 6),
             core.Flag('carrSoln', 6, 8),
         ]),
         core.BitField('flags2', 'X1', [
@@ -229,7 +211,10 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('sAcc', 'U4'),
         core.Field('headAcc', 'U4'),
         core.Field('pDOP', 'U2'),
-        core.PadByte(5),
+        core.BitField('flags3', 'U2', [
+            core.Flag('invalidL1h', 0, 1),
+        ]),
+        core.PadByte(repeat=5),
         core.Field('headVeh', 'I4'),
         core.Field('magDec', 'I2'),
         core.Field('magAcc', 'U2'),
@@ -242,13 +227,19 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('relPosN', 'I4'),
         core.Field('relPosE', 'I4'),
         core.Field('relPosD', 'I4'),
+        core.Field('relPosLength', 'I4'),
+        core.Field('relPosHeading', 'I4'),
+        core.PadByte(),
         core.Field('relPosHPN', 'I1'),
         core.Field('relPosHPE', 'I1'),
         core.Field('relPosHPD', 'I1'),
-        core.PadByte(),
+        core.Field('relPosHPLength', 'I1'),
         core.Field('accN', 'U4'),
         core.Field('accE', 'U4'),
         core.Field('accD', 'U4'),
+        core.Field('accLength', 'U4'),
+        core.Field('accHeading', 'U4'),
+        core.PadByte(repeat=4),
         core.BitField('flags', 'X4', [
             core.Flag('gnssFixOK', 0, 1),
             core.Flag('diffSoln', 1, 2),
@@ -257,13 +248,15 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Flag('isMoving', 5, 6),
             core.Flag('refPosMiss', 6, 7),
             core.Flag('refObsMiss', 7, 8),
+            core.Flag('relPosHeadingValid', 8, 9),
+            core.Flag('relPosNormalized', 9, 10),
         ]),
     ]),
     core.Message(0x35, 'SAT', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
         core.Field('numSvs', 'U1'),
-        core.PadByte(repeat=1),
+        core.PadByte(repeat=2),
         core.RepeatedBlock('RB', [
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),
@@ -297,14 +290,14 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('mode', 'U1'),
         core.Field('sys', 'I1'),
         core.BitField('service', 'X1', [
-            core.Flag('ranging', 0, 1),
-            core.Flag('corrections', 1, 2),
-            core.Flag('integrity', 2, 3),
-            core.Flag('testMode', 3, 4),
-            core.Flag('bad', 4, 5),
+            core.Flag('Ranging', 0, 1),
+            core.Flag('Corrections', 1, 2),
+            core.Flag('Integrity', 2, 3),
+            core.Flag('TestMode', 3, 4),
+            core.Flag('Bad', 4, 5),
         ]),
         core.Field('cnt', 'U1'),
-        core.PadByte(repeat=2),
+        core.PadByte(repeat=3),
         core.RepeatedBlock('RB', [
             core.Field('svid', 'U1'),
             core.Field('flags', 'U1'),
@@ -313,11 +306,11 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Field('svService', 'U1'),
             core.PadByte(),
             core.Field('prc', 'I2'),
-            core.PadByte(repeat=1),
+            core.PadByte(repeat=2),
             core.Field('ic', 'I2'),
         ]),
     ]),
-    core.Message(0x42, 'SLAS', [
+    core.Message(0x43, 'SIG', [ #here
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
