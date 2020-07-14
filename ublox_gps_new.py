@@ -47,8 +47,8 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
-import ubxTranslator as ubx
-
+from ubxtranslator import core
+import serial
 
 class UbloxGps(object):
 
@@ -61,35 +61,26 @@ class UbloxGps(object):
                 'baud': 38400,
                 'timeout': 1
             } 
-
     
-    def send_packet(self, port = self.port, packet): 
-        
+    def send_packet(self, serial_port): 
+    
+            packet = bytes("\x06\x8a\x00\x00\x00",'utf8')
+            print(packet)
+            checksum = core.Parser._generate_fletcher_checksum(packet)
+            print(hex(checksum[0]), hex(checksum[1]))
+
+            serial_port.write(0xb5)
+            serial_port.write(0x62)
+            serial_port.write(0x06)
+            serial_port.write(0x8a)
+            serial_port.write(0x00)#length lsb
+            serial_port.write(0x00)#length msb
+            serial_port.write(0x0)#payload
+            serial_port.write(checksum[0])#checksuma
+            serial_port.write(checksum[1])#checksumb
 
 
-        with serial.Serial(self.port_settings.get('port'),
-                           self.port_settings.get('baud'),
-                           timeout=self.port_settings.get('timemout')) as ser:
+            return
 
-            ser.write(ubc.UBX_SYNCH_1)
-            ser.write(ubc.UBX_SYNCH_2)
-            ser.write(packet.get('ubx_class'))
-            ser.write(packet.get('ubx_id'))
-            ser.write(packet.get('ubx_length_lsb'))
-            ser.write(packet.get('ubx_length_msb'))
-            ser.write(0)#payload
-            ser.write(packet.get('ubx_checkA'))
-            ser.write(packet.get('ubx_checkB'))
 
-            sleep(.5) # 500ms wait
-
-            ublox_response = []
-
-            for byte in range(ser.in_waiting):
-                ublox_response.append(ser.read())
-
-            if ublox_response:
-                ubx_response = self.build_response(ublox_response)
-                return ubx_response
-            else:
-                return {}
+                         
