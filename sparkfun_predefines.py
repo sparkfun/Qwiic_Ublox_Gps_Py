@@ -209,6 +209,34 @@ NAV_CLS = core.Cls(0x10, 'ESF', [
     
 ])
 
+NAV_CLS = core.Cls(0x04, 'INF', [
+    core.Message(0x04, 'DEBUG', [
+        core.RepeatedBlock('RB', [
+            core.Field('str','CH'),
+        ]),
+    ]),
+    core.Message(0x00, 'ERROR', [
+        core.RepeatedBlock('RB', [
+            core.Field('str','CH'),
+        ]),
+    ]),
+    core.Message(0x02, 'NOTICE', [
+        core.RepeatedBlock('RB', [
+            core.Field('str','CH'),
+        ]),
+    ]),
+    core.Message(0x03, 'TEST', [
+        core.RepeatedBlock('RB', [
+            core.Field('str','CH'),
+        ]),
+    ]),
+    core.Message(0x01, 'WARNING', [
+        core.RepeatedBlock('RB', [
+            core.Field('str','CH'),
+        ]),
+    ]),
+])
+
 NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x05, 'ATT', [
         core.Field('iTOW', 'U4'),
