@@ -53,34 +53,32 @@ import serial
 class UbloxGps(object):
 
     def __init__(self, port_settings = None):
-        if port_settings is not None: 
-            self.port_settings = port_settings
-        else:
-            self.port_settings = {
-                'port': '/dev/serial0',
-                'baud': 38400,
-                'timeout': 1
-            } 
     
-    def send_packet(self, serial_port): 
+    def send_packet(self, port, ): 
     
             packet = bytes("\x06\x8a\x00\x00\x00",'utf8')
             print(packet)
             checksum = core.Parser._generate_fletcher_checksum(packet)
             print(hex(checksum[0]), hex(checksum[1]))
 
-            serial_port.write(0xb5)
-            serial_port.write(0x62)
-            serial_port.write(0x06)
-            serial_port.write(0x8a)
-            serial_port.write(0x00)#length lsb
-            serial_port.write(0x00)#length msb
-            serial_port.write(0x0)#payload
-            serial_port.write(checksum[0])#checksuma
-            serial_port.write(checksum[1])#checksumb
+            port.write(0xb5)
+            port.write(0x62)
+            port.write(0x06)
+            port.write(0x8a)
+            port.write(0x00)#length lsb
+            port.write(0x00)#length msb
+            port.write(0x0)#payload
+            port.write(checksum[0])#checksuma
+            port.write(checksum[1])#checksumb
 
 
             return
+
+    def request_packet(self, port, ubx_class, ubx_id): 
+
+
+        checksum = core.Parser._generate_fletcher_checksum(packet)
+        with port as p: 
 
 
                          
