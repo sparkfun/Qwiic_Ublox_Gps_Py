@@ -13,12 +13,12 @@
 #
 # Written by SparkFun Electronics, October 2019
 #
-# This python library supports the SparkFun Electroncis qwiic
+# This python library suphard_ports the SparkFun Electroncis qwiic
 # qwiic sensor/board ecosystem
 #
 # More information on qwiic is at https:// www.sparkfun.com/qwiic
 #
-# Do you like this library? Help support SparkFun. Buy a board!
+# Do you like this library? Help suphard_port SparkFun. Buy a board!
 #==================================================================================
 # Copyright (c) 2019 SparkFun Electronics
 #
@@ -30,7 +30,7 @@
 # furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# copies or substantial hard_portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -41,44 +41,60 @@
 # SOFTWARE.
 #==================================================================================
 #
-# This is mostly a port of existing Arduino functionaly, so pylint is sad.
+# This is mostly a hard_port of existing Arduino functionaly, so pylint is sad.
 # The goal is to keep the public interface pthonic, but internal is internal
 #
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
 from ubxtranslator import core
+
 import serial
+import sparkfun_predefines as sp
 
 class UbloxGps(object):
 
-    def __init__(self, port_settings = None):
+    def __init__(self, hard_port = None):
+        if hard_port is None: 
+            self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
+        else:
+            self.hard_port = hard_port 
+
+        self.parse_tool = core.Parser([sp.ACK_CLS, sp.CFG_CLS, sp.ESF_CLS,
+                                       sp.INF_CLS, sp.MGA_CLS, sp.MON_CLS,
+                                       sp.NAV_CLS, sp.TIM_CLS])
     
-    def send_packet(self, port, ): 
-    
-            packet = bytes("\x06\x8a\x00\x00\x00",'utf8')
-            print(packet)
-            checksum = core.Parser._generate_fletcher_checksum(packet)
-            print(hex(checksum[0]), hex(checksum[1]))
+    def send_packet(self, _port): 
 
-            port.write(0xb5)
-            port.write(0x62)
-            port.write(0x06)
-            port.write(0x8a)
-            port.write(0x00)#length lsb
-            port.write(0x00)#length msb
-            port.write(0x0)#payload
-            port.write(checksum[0])#checksuma
-            port.write(checksum[1])#checksumb
+        if _port is None:
+            _port = self.hard_port
 
-
-            return
-
-    def request_packet(self, port, ubx_class, ubx_id): 
-
-
+        packet = bytes("\x06\x8a\x00\x00\x00",'utf8')
+        print(packet)
         checksum = core.Parser._generate_fletcher_checksum(packet)
-        with port as p: 
+        print(hex(checksum[0]), hex(checksum[1]))
+
+        _port.write(0xb5)
+        _port.write(0x62)
+        _port.write(0x06)
+        _port.write(0x8a)
+        _port.write(0x00)#length lsb
+        _port.write(0x00)#length msb
+        _port.write(0x0)#payload
+        _port.write(checksum[0])#checksuma
+        _port.write(checksum[1])#checksumb
+
+
+        return
+
+    def request_packet(self, ubx_class, ubx_id): 
+
+        packet = ubx_class +  ubx_id
+        checksum = core.Parser._generate_fletcher_checksum(packet)
+        packet = packet + checksum
+        return packet
+         
+            
 
 
                          

@@ -1,9 +1,9 @@
 """Predefined message classes"""
 
-from . import core
+from ubxtranslator import core
 
-__all__ = ['ACK_CLS', 'CFG_CLS', 'ESF_CLS', 'INF_CLS', 'MGS_CLS', 'MON_CLS',
-           'NAV_CLS', 'TIM_CLS' ]
+__all__ = ['ACK_CLS', 'CFG_CLS', 'ESF_CLS', 'INF_CLS', 'MGA_CLS', 'MON_CLS',
+           'NAV_CLS', 'TIM_CLS', ]
 
 ACK_CLS = core.Cls(0x05, 'ACK', [
     core.Message(0x01, 'ACK', [
@@ -34,8 +34,8 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
         ]),
         core.Field('extint', 'U1'),
         core.Field('reAcqCno', 'U1'),
-        core.Field('refFreq ', 'U4'),
-        core.Field('refFreqAcc ', 'U4'),
+        core.Field('refFreq', 'U4'),
+        core.Field('refFreqAcc', 'U4'),
         core.RepeatedBlock('RB', [ 
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),
@@ -60,11 +60,11 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
             core.Flag('aop', 15, 16),
         ]),
         core.Field('resetMode', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
     ]),    
     core.Message(0x64, 'SPT', [
         core.Field('version', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('sensorId', 'U2'),
         core.PadByte(repeat=8),
     ]),    
@@ -101,7 +101,7 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
         ]),
         core.Field('transaction', 'U1'),
         core.Field('action', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.RepeatedBlock('RB', [
             core.Field('cfgData','U4'),
         ]),
@@ -121,7 +121,7 @@ ESF_CLS = core.Cls(0x10, 'ESF', [
             core.Flag('yawAlgoError', 1, 2),
             core.Flag('angleError', 2, 3),
         ]),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('yaw','U4'), 
         core.Field('pitch','I2'), 
         core.Field('roll','I2'), 
@@ -212,27 +212,27 @@ ESF_CLS = core.Cls(0x10, 'ESF', [
 INF_CLS = core.Cls(0x04, 'INF', [
     core.Message(0x04, 'DEBUG', [
         core.RepeatedBlock('RB', [
-            core.Field('str','CH'),
+            core.Field('str','C'),
         ]),
     ]),
     core.Message(0x00, 'ERROR', [
         core.RepeatedBlock('RB', [
-            core.Field('str','CH'),
+            core.Field('str','C'),
         ]),
     ]),
     core.Message(0x02, 'NOTICE', [
         core.RepeatedBlock('RB', [
-            core.Field('str','CH'),
+            core.Field('str','C'),
         ]),
     ]),
     core.Message(0x03, 'TEST', [
         core.RepeatedBlock('RB', [
-            core.Field('str','CH'),
+            core.Field('str','C'),
         ]),
     ]),
     core.Message(0x01, 'WARNING', [
         core.RepeatedBlock('RB', [
-            core.Field('str','CH'),
+            core.Field('str','C'),
         ]),
     ]),
 ])
@@ -245,11 +245,11 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('msgId', 'U1'),
         core.Field('msgPayloadStart', 'U1'),
     ]),
-    core.Message(0x03, 'BDS-EPH', [
+    core.Message(0x03, 'BDS_EPH', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.Field('svId', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('SatH1', 'U1'),
         core.Field('IODC', 'U1'),
         core.Field('a2', 'I2'),
@@ -275,11 +275,11 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('Crs', 'I4'),
         core.PadByte(repeat=4),
     ]), # Input
-    core.Message(0x03, 'BDS-ALM', [
+    core.Message(0x03, 'BDS_ALM', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.Field('svId', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('Wna', 'U1'),
         core.Field('toa', 'U1'),
         core.Field('deltaI', 'I2'),
@@ -291,28 +291,28 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('a0', 'I4'),
         core.PadByte(repeat=4),
     ]), # Input
-    core.Message(0x03, 'BDS-HEALTH', [
+    core.Message(0x03, 'BDS_HEALTH', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
         core.Field('healthCode', 'U2'),
         core.PadByte(repeat=4),
     ]), # Input
-    core.Message(0x03, 'BDS-UTC', [
+    core.Message(0x03, 'BDS_UTC', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
         core.Field('a0UTC', 'I4'),
         core.Field('a1UTC', 'I4'),
         core.Field('dtLS', 'I1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('wnRec', 'U1'),
         core.Field('wnLSF', 'U1'),
         core.Field('dN', 'U1'),
         core.Field('dtLSF', 'U1'),
         core.PadByte(repeat=2),
     ]), # Input
-    core.Message(0x03, 'BDS-UTC', [
+    core.Message(0x03, 'BDS_UTC', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
@@ -334,11 +334,11 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
             core.Field('data','U1'),
         ]),
     ]),# Input/Output
-    core.Message(0x02, 'GAL-EPH', [
+    core.Message(0x02, 'GAL_EPH', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.Field('svId', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('iodNav', 'U2'),
         core.Field('deltaN', 'I2'),
         core.Field('m0', 'I4'),
@@ -366,11 +366,11 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('dataValidityE5b', 'U1'),
         core.PadByte(repeat=4),
     ]), # Input
-    core.Message(0x02, 'GAL-ALM', [
+    core.Message(0x02, 'GAL_ALM', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.Field('svId', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('ioda', 'U1'),
         core.Field('almWnA', 'U1'),
         core.Field('toa', 'U2'),
@@ -386,7 +386,7 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('healthE5b', 'U1'),
         core.PadByte(repeat=4),
     ]), # Input
-    core.Message(0x02, 'GAL-TIMEOFFSET', [
+    core.Message(0x02, 'GAL_TIMEOFFSET', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
@@ -396,7 +396,7 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
         core.Field('wn0G', 'U1'),
         core.PadByte(repeat=2),
     ]), # Input
-    core.Message(0x02, 'GAL-UTC', [
+    core.Message(0x02, 'GAL_UTC', [
         core.Field('type', 'U1'),
         core.Field('version', 'U1'),
         core.PadByte(repeat=2),
@@ -420,7 +420,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Flag('mem', 0, 1),
             core.Flag('alloc', 1, 2),
         ]),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('protIds', 'U1'),
         core.RepeatedBlock('RB', [
             core.Field('portId','U2'),
@@ -434,7 +434,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('rxPeakUsage','U1'),
             core.Field('overrunErrs','U2'),
             core.Field('msgs','U2'),
-            core.PadByte(),
+            core.PadByte(repeat=1),
             core.Field('skipped', 'U4'),
         ]),
     ]), 
@@ -468,7 +468,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Flag('safeBoot', 0, 1),
             core.Flag('xtalAbsent', 0, 1),
         ]),
-        core.Field('hwVersion', 'CH'),
+        core.Field('hwVersion', 'C'),
         core.PadByte(repeat=9),
         core.RepeatedBlock('RB', [
             core.Field('pinId', 'U2'),
@@ -483,7 +483,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
                 core.Flag('pioPullLow', 10, 11),
             ]),
             core.Field('VP', 'U1'),
-            core.PadByte(),
+            core.PadByte(repeat=1),
         ]),
     ]),
     core.Message(0x27, 'PATCH', [ 
@@ -518,27 +518,27 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('rfPga', 'U1'),
             core.PadByte(repeat=27), #? 
         ]),
-        core.RepeatedBlock('RB', [
-            core.Field('gnssId', 'U1'),
-            core.Field('svId', 'U1'),
-            core.Field('sigId', 'U1'),
-            core.Field('accsId', 'U1'),
-            core.Field('cnoMin', 'U2'),
-            core.Field('cnoMax', 'U2'),
-            core.PadByte(repeat=14), #?
-            core.Field('carrPhDevMax', 'U1'),
-            core.BitField('signalInfo', 'X1', [
-                core.Flag('ifChnValid', 0, 1),
-                core.Flag('ifChnId', 1, 3),
-            ]),
-            core.Field('codeLockSuccess', 'U1'),
-            core.Field('phaseLockSuccess', 'U1'),
-            core.Field('minCodeLockTime', 'U2'),
-            core.Field('maxCodeLockTime', 'U2'),
-            core.Field('minPhaseLockTime', 'U2'),
-            core.Field('maxPhaseLockTime', 'U2'),
-            core.PadByte(repeat=2),
-        ]),
+        #core.RepeatedBlock('RB2', [
+        #    core.Field('gnssId', 'U1'),
+        #    core.Field('svId', 'U1'),
+        #    core.Field('sigId', 'U1'),
+        #    core.Field('accsId', 'U1'),
+        #    core.Field('cnoMin', 'U2'),
+        #    core.Field('cnoMax', 'U2'),
+        #    core.PadByte(repeat=14), #?
+        #    core.Field('carrPhDevMax', 'U1'),
+        #    core.BitField('signalInfo', 'X1', [
+        #        core.Flag('ifChnValid', 0, 1),
+        #        core.Flag('ifChnId', 1, 3),
+        #    ]),
+        #    core.Field('codeLockSuccess', 'U1'),
+        #    core.Field('phaseLockSuccess', 'U1'),
+        #    core.Field('minCodeLockTime', 'U2'),
+        #    core.Field('maxCodeLockTime', 'U2'),
+        #    core.Field('minPhaseLockTime', 'U2'),
+        #    core.Field('maxPhaseLockTime', 'U2'),
+        #    core.PadByte(repeat=2),
+        #]),
     ]),
     core.Message(0x38, 'RF', [ 
         core.Field('version', 'U1'),
@@ -572,7 +572,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
         core.Field('version', 'U1'),
         core.Field('numSensor', 'U1'),
         core.Field('numRes', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.RepeatedBlock('RB', [
             core.Field('sensorId', 'U1'),
             core.BitField('drvVer', 'X1', [
@@ -582,13 +582,13 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('testState', 'U1'),
             core.Field('drvFileName', 'U1'),
         ]),
-        core.RepeatedBlock('RB', [
-            core.Field('sensorIdRes', 'U2'),
-            core.Field('sensorType', 'U2'),
-            core.Field('resType', 'U2'),
-            core.PadByte(repeat=2),
-            core.Field('value', 'I4'),
-        ]),
+        #core.RepeatedBlock('RB2', [
+        #    core.Field('sensorIdRes', 'U2'),
+        #    core.Field('sensorType', 'U2'),
+        #    core.Field('resType', 'U2'),
+        #    core.PadByte(repeat=2),
+        #    core.Field('value', 'I4'),
+        #]),
     ]),
 ])
 
@@ -781,7 +781,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('sAcc', 'U4'),
         core.Field('headAcc', 'U4'),
         core.Field('pDOP', 'U2'),
-        core.BitField('flags3', 'U2', [
+        core.BitField('flags3', 'X1', [
             core.Flag('invalidL1h', 0, 1),
         ]),
         core.PadByte(repeat=5),
@@ -791,7 +791,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     ]),
     core.Message(0x3C, 'RELPOSNED', [
         core.Field('version', 'U1'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('refStationId', 'U2'),
         core.Field('iTOW', 'U4'),
         core.Field('relPosN', 'I4'),
@@ -799,7 +799,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('relPosD', 'I4'),
         core.Field('relPosLength', 'I4'),
         core.Field('relPosHeading', 'I4'),
-        core.PadByte(),
+        core.PadByte(repeat=1),
         core.Field('relPosHPN', 'I1'),
         core.Field('relPosHPE', 'I1'),
         core.Field('relPosHPD', 'I1'),
@@ -874,7 +874,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Field('udre', 'U1'),
             core.Field('svSys', 'U1'),
             core.Field('svService', 'U1'),
-            core.PadByte(),
+            core.PadByte(repeat=1),
             core.Field('prc', 'I2'),
             core.PadByte(repeat=2),
             core.Field('ic', 'I2'),
@@ -895,7 +895,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
             core.Field('qualityInd', 'U1'),
             core.Field('corrSource', 'U1'),
             core.Field('ionoModel', 'U1'),
-            core.Field('sigFlags', 'X2', [
+            core.BitField('sigFlags', 'X2', [
                 core.Flag('health', 0, 2),
                 core.Flag('prSmoothed', 2, 3),
                 core.Flag('prUsed', 3, 4),
@@ -906,7 +906,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
                 core.Flag('doCorrUsed', 8, 9),
             ]),
         ]),
-            core.PadByte(repeate=4)
+            core.PadByte(repeat=4)
     ]),
     core.Message(0x03, 'STATUS', [
         core.Field('iTOW', 'U4'),
