@@ -2,7 +2,8 @@
 
 from . import core
 
-__all__ = ['ACK_CLS', 'NAV_CLS', ]
+__all__ = ['ACK_CLS', 'CFG_CLS', 'ESF_CLS', 'INF_CLS', 'MGS_CLS', 'MON_CLS',
+           'NAV_CLS', 'TIM_CLS' ]
 
 ACK_CLS = core.Cls(0x05, 'ACK', [
     core.Message(0x01, 'ACK', [
@@ -516,7 +517,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
         core.RepeatedBlock('RB', [
             core.Field('rfPga', 'U1'),
             core.PadByte(repeat=27), #? 
-        )],
+        ]),
         core.RepeatedBlock('RB', [
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),
@@ -537,7 +538,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('minPhaseLockTime', 'U2'),
             core.Field('maxPhaseLockTime', 'U2'),
             core.PadByte(repeat=2),
-        )],
+        ]),
     ]),
     core.Message(0x38, 'RF', [ 
         core.Field('version', 'U1'),
@@ -565,6 +566,28 @@ MON_CLS = core.Cls(0x0a, 'MON', [
     core.Message(0x21, 'RXR', [ 
         core.BitField('flags', 'X1', [
             core.Flag('awake', 0, 1),
+        ]),
+    ]),
+    core.Message(0x2f, 'SPT', [ 
+        core.Field('version', 'U1'),
+        core.Field('numSensor', 'U1'),
+        core.Field('numRes', 'U1'),
+        core.PadByte(),
+        core.RepeatedBlock('RB', [
+            core.Field('sensorId', 'U1'),
+            core.BitField('drvVer', 'X1', [
+                core.Flag('drvVerMaj', 0, 4),
+                core.Flag('drvVerMin', 4, 7),
+            ]),
+            core.Field('testState', 'U1'),
+            core.Field('drvFileName', 'U1'),
+        ]),
+        core.RepeatedBlock('RB', [
+            core.Field('sensorIdRes', 'U2'),
+            core.Field('sensorType', 'U2'),
+            core.Field('resType', 'U2'),
+            core.PadByte(repeat=2),
+            core.Field('value', 'I4'),
         ]),
     ]),
 ])
