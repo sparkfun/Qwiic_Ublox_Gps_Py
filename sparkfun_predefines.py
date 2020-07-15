@@ -411,6 +411,164 @@ MGA_CLS = core.Cls(0x13, 'MGA', [
     ]), # Input
 ])
 
+MON_CLS = core.Cls(0x0a, 'MON', [
+    core.Message(0x36, 'COMMS', [
+        core.Field('version', 'U1'),
+        core.Field('nPorts', 'U1'),
+        core.BitField('txErrors', 'X1', [
+            core.Flag('mem', 0, 1),
+            core.Flag('alloc', 1, 2),
+        ]),
+        core.PadByte(),
+        core.Field('protIds', 'U1'),
+        core.RepeatedBlock('RB', [
+            core.Field('portId','U2'),
+            core.Field('txPending','U2'),
+            core.Field('txBytes','U4'),
+            core.Field('txUsage','U1'),
+            core.Field('txPeakUsage','U1'),
+            core.Field('rxPending','U2'),
+            core.Field('rxBytes','U4'),
+            core.Field('rxUsage','U1'),
+            core.Field('rxPeakUsage','U1'),
+            core.Field('overrunErrs','U2'),
+            core.Field('msgs','U2'),
+            core.PadByte(),
+            core.Field('skipped', 'U4'),
+        ]),
+    ]), 
+    core.Message(0x28, 'GNSS', [
+        core.Field('version', 'U1'),
+        core.BitField('supported', 'X1', [
+            core.Flag('GPSSup', 0, 1),
+            core.Flag('GlonassSup', 1, 2),
+            core.Flag('GalileoSup', 2, 3),
+        ]),
+        core.BitField('defaultGnss', 'X1', [
+            core.Flag('GPSDef', 0, 1),
+            core.Flag('GlonassDef', 0, 1),
+            core.Flag('BeidouDef', 0, 1),
+            core.Flag('GalileoDef', 0, 1),
+        ]),
+        core.BitField('enabled', 'X1', [
+            core.Flag('GPSEna', 0, 1),
+            core.Flag('GlonasEna', 0, 1),
+            core.Flag('BeidouEna', 0, 1),
+            core.Flag('GalileoEna', 0, 1),
+        ]),
+        core.Field('simultaneous', 'U1'),
+        core.PadByte(repeat=3),
+    ]),
+    core.Message(0x37, 'HW3', [ #HW and HW2 not implemented
+        core.Field('version', 'U1'),
+        core.Field('nPins', 'U1'),
+        core.BitField('flags', 'X1', [
+            core.Flag('rtcCalib', 0, 1),
+            core.Flag('safeBoot', 0, 1),
+            core.Flag('xtalAbsent', 0, 1),
+        ]),
+        core.Field('hwVersion', 'CH'),
+        core.PadByte(repeat=9),
+        core.RepeatedBlock('RB', [
+            core.Field('pinId', 'U2'),
+            core.BitField('pinMask', 'X2', [
+                core.Flag('periphPIO', 0, 1),
+                core.Flag('pinBank', 1, 4),
+                core.Flag('direction', 4, 5),
+                core.Flag('value', 5, 6),
+                core.Flag('vpManager', 6, 7),
+                core.Flag('pioIrq', 7, 8),
+                core.Flag('pioPullHigh', 8, 9),
+                core.Flag('pioPullLow', 10, 11),
+            ]),
+            core.Field('VP', 'U1'),
+            core.PadByte(),
+        ]),
+    ]),
+    core.Message(0x27, 'PATCH', [ 
+        core.Field('version', 'U2'),
+        core.Field('nEntries', 'U2'),
+        core.RepeatedBlock('RB', [
+            core.BitField('patchInfo', 'X4', [
+                core.Flag('activated', 0, 1),
+                core.Flag('location', 1, 3),
+            ]),
+            core.Field('comparatorNumber', 'U4'),
+            core.Field('patchAddress', 'U4'),
+            core.Field('patchData', 'U4'),
+        ]),
+    ]),
+    core.Message(0x24, 'PIO', [ 
+        core.Field('version', 'U1'),
+        core.Field('responseType', 'U1'),
+        core.Field('pinState', 'U1'),
+    ]),
+    core.Message(0x2b, 'PT2', [ 
+        core.Field('version', 'U1'),
+        core.Field('testmode', 'U1'),
+        core.Field('numRfChn', 'U1'),
+        core.Field('numSvSigDesc', 'U1'),
+        core.Field('testRunTime', 'U4'),
+        core.Field('clkDriftAid', 'I4'),
+        core.Field('clkDriftTrk', 'I4'),
+        core.Field('rtcFreq', 'U4'),
+        core.Field('postStatus', 'U4'),
+        core.RepeatedBlock('RB', [
+            core.Field('rfPga', 'U1'),
+            core.PadByte(repeat=27), #? 
+        )],
+        core.RepeatedBlock('RB', [
+            core.Field('gnssId', 'U1'),
+            core.Field('svId', 'U1'),
+            core.Field('sigId', 'U1'),
+            core.Field('accsId', 'U1'),
+            core.Field('cnoMin', 'U2'),
+            core.Field('cnoMax', 'U2'),
+            core.PadByte(repeat=14), #?
+            core.Field('carrPhDevMax', 'U1'),
+            core.BitField('signalInfo', 'X1', [
+                core.Flag('ifChnValid', 0, 1),
+                core.Flag('ifChnId', 1, 3),
+            ]),
+            core.Field('codeLockSuccess', 'U1'),
+            core.Field('phaseLockSuccess', 'U1'),
+            core.Field('minCodeLockTime', 'U2'),
+            core.Field('maxCodeLockTime', 'U2'),
+            core.Field('minPhaseLockTime', 'U2'),
+            core.Field('maxPhaseLockTime', 'U2'),
+            core.PadByte(repeat=2),
+        )],
+    ]),
+    core.Message(0x38, 'RF', [ 
+        core.Field('version', 'U1'),
+        core.Field('nBlocks', 'U1'),
+        core.PadByte(repeat=2),
+        core.RepeatedBlock('RB', [
+            core.Field('blockId', 'U1'),
+            core.BitField('flags', 'X1', [
+                core.Flag('jammingState', 0, 2),
+            ]),
+            core.Field('antStatus', 'U1'),
+            core.Field('antPower', 'U1'),
+            core.Field('postStatus', 'U4'),
+            core.PadByte(repeat=4),
+            core.Field('noisePerMS', 'U2'),
+            core.Field('agcCnt', 'U2'),
+            core.Field('jamInd', 'U2'),
+            core.Field('ofsI', 'I1'),
+            core.Field('magI', 'U1'),
+            core.Field('ofsQ', 'I1'),
+            core.Field('magQ', 'U1'),
+            core.PadByte(repeat=3),
+        ]),
+    ]),
+    core.Message(0x21, 'RXR', [ 
+        core.BitField('flags', 'X1', [
+            core.Flag('awake', 0, 1),
+        ]),
+    ]),
+])
+
 NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x05, 'ATT', [
         core.Field('iTOW', 'U4'),
