@@ -79,17 +79,19 @@ class UbloxGps(object):
 
     def send_packet(self, _ubx_class, _ubx_id, _ubx_payload): 
 
+        SYNC_CHAR1 = 0xB5
+        SYNC_CHAR2 = 0x62
 
         _ubx_length = self.count_bytes(_ubx_payload)
 
-        packet = struct.pack('BBBBBB', 0xB5, 0x62, _ubx_class.id_, _ubx_id, _ubx_length,
-                                _ubx_payload)
+        packet = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, _ubx_class.id_, _ubx_id, 
+                             _ubx_length, _ubx_payload)
 
         checksum = core.Parser._generate_fletcher_checksum(packet[2:])
 
 
         for char in struct.iter_unpack('B',packet):
-            print(self.hard_port.write(char))
+            self.hard_port.write(char)
 
         self.hard_port.write(bytes([checksum[0]]))
         self.hard_port.write(bytes([checksum[1]]))
@@ -124,7 +126,7 @@ class UbloxGps(object):
 
     def get_nav(self):
 
-        self.send_packet(sp.CFG_CLS, 0x41, 0x00)
-        parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
+        self.send_packet(sp.NAV_CLS, 0x22, 0x00)
+        parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)

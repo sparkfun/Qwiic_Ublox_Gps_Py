@@ -627,7 +627,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
     core.Message(0x05, 'ATT', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
-        core.PadByte(repeat=3),
+        core.PadByte(repeat=1),
         core.Field('roll', 'I4'),
         core.Field('pitch', 'I4'),
         core.Field('heading', 'I4'),

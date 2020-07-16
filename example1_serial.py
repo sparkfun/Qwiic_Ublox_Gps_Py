@@ -15,16 +15,11 @@ gps = UbloxGps(port)
 
 def run():
 
-
-    print("Starting to listen for UBX packets")
-
-    print(gps.get_nav())
-
     try:
-        print("Reading from NAV or ACK(fingers crossed)")
+        print("Listening for UBX Packets")
         while True:
             try:
-                msg= parser.receive_from(port)
+                msg=gps.get_nav() 
                 print(msg)
             except (ValueError, IOError) as err:
                 print(err)
