@@ -18,8 +18,7 @@ def run():
 
     print("Starting to listen for UBX packets")
 
-    print(gps.message_version())
-
+    print(gps.get_nav())
 
     try:
         print("Reading from NAV or ACK(fingers crossed)")

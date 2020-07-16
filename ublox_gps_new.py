@@ -50,6 +50,7 @@
 from ubxtranslator import core
 
 import serial
+import struct
 import sparkfun_predefines as sp
 
 class UbloxGps(object):
@@ -78,26 +79,20 @@ class UbloxGps(object):
 
     def send_packet(self, _ubx_class, _ubx_id, _ubx_payload): 
 
-        UBX_SYNC_CHAR1 = b'0xb5'
-        UBX_SYNC_CHAR2 = b'0x62'
 
         _ubx_length = self.count_bytes(_ubx_payload)
 
-        byte_list = bytes([_ubx_class.id_]) + bytes([_ubx_id]) + \
-                    bytes([_ubx_length]) + bytes([_ubx_payload])
+        packet = struct.pack('BBBBBB', 0xB5, 0x62, _ubx_class.id_, _ubx_id, _ubx_length,
+                                _ubx_payload)
 
-        packet = bytes(byte_list)
-        checksum = core.Parser._generate_fletcher_checksum(packet)
+        checksum = core.Parser._generate_fletcher_checksum(packet[2:])
 
-        self.hard_port.write(UBX_SYNC_CHAR1)
-        self.hard_port.write(UBX_SYNC_CHAR2)
-        self.hard_port.write(b'_ubx_class.id_')
-        self.hard_port.write(b'_ubx_id')
-        self.hard_port.write(bytes([_ubx_length & 0xFF]))
-        self.hard_port.write(bytes([_ubx_length >> 8]))
-        self.hard_port.write(b'_ubx_payload')
-        self.hard_port.write(checksum[0])#checksuma
-        self.hard_port.write(checksum[1])#checksumb
+
+        for char in struct.iter_unpack('B',packet):
+            print(self.hard_port.write(char))
+
+        self.hard_port.write(bytes([checksum[0]]))
+        self.hard_port.write(bytes([checksum[1]]))
         
         return
 
@@ -111,17 +106,25 @@ class UbloxGps(object):
             
     def message_version(self):
 
-        msg = self.send_packet(sp.MON_CLS, 0x36, 0x00)
+        msg = self.send_packet(sp.MON_CLS, 0x0e, 0x00)
 
         parse_tool = core.Parser([sp.MON_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
+
         return(msg)
 
     def enable_UART1(self, enable):
         if enable is True: 
-            self.send_packet(sp.CFG_CLS, 0x8a, 0x00)
+            self.send_packet(sp.CFG_CLS, 0x04, 0x00)
 
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
                          
+
+    def get_nav(self):
+
+        self.send_packet(sp.CFG_CLS, 0x41, 0x00)
+        parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
