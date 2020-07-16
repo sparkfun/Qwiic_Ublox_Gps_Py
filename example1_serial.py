@@ -16,12 +16,9 @@ gps = UbloxGps(port)
 def run():
 
 
-
-    gps.request_packet('NAV_MON', 'HW2')
-
-
     print("Starting to listen for UBX packets")
-    print("Writing to NAV")
+
+    print(gps.message_version())
 
 
     try:

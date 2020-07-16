@@ -60,41 +60,68 @@ class UbloxGps(object):
         else:
             self.hard_port = hard_port 
 
-        self.parse_tool = core.Parser([sp.ACK_CLS, sp.CFG_CLS, sp.ESF_CLS,
-                                       sp.INF_CLS, sp.MGA_CLS, sp.MON_CLS,
-                                       sp.NAV_CLS, sp.TIM_CLS])
+        # Add SPI here
+
+#        self.parse_tool = core.Parser([sp.ACK_CLS, sp.CFG_CLS, sp.ESF_CLS,
+#                                       sp.INF_CLS, sp.MGA_CLS, sp.MON_CLS,
+#                                       sp.NAV_CLS, sp.TIM_CLS])
     
-    def send_packet(self, _port): 
+    def count_bytes(self, int_val):
 
-        if _port is None:
-            _port = self.hard_port
+        num_bytes = 0
 
-        packet = bytes("\x06\x8a\x00\x00\x00",'utf8')
-        print(packet)
+        while int_val > 0:
+            int_val = int_val >> 8
+            num_bytes = num_bytes + 1
+
+        return num_bytes
+
+    def send_packet(self, _ubx_class, _ubx_id, _ubx_payload): 
+
+        UBX_SYNC_CHAR1 = b'0xb5'
+        UBX_SYNC_CHAR2 = b'0x62'
+
+        _ubx_length = self.count_bytes(_ubx_payload)
+
+        byte_list = bytes([_ubx_class.id_]) + bytes([_ubx_id]) + \
+                    bytes([_ubx_length]) + bytes([_ubx_payload])
+
+        packet = bytes(byte_list)
         checksum = core.Parser._generate_fletcher_checksum(packet)
-        print(hex(checksum[0]), hex(checksum[1]))
 
-        _port.write(0xb5)
-        _port.write(0x62)
-        _port.write(0x06)
-        _port.write(0x8a)
-        _port.write(0x00)#length lsb
-        _port.write(0x00)#length msb
-        _port.write(0x0)#payload
-        _port.write(checksum[0])#checksuma
-        _port.write(checksum[1])#checksumb
-
-
+        self.hard_port.write(UBX_SYNC_CHAR1)
+        self.hard_port.write(UBX_SYNC_CHAR2)
+        self.hard_port.write(b'_ubx_class.id_')
+        self.hard_port.write(b'_ubx_id')
+        self.hard_port.write(bytes([_ubx_length & 0xFF]))
+        self.hard_port.write(bytes([_ubx_length >> 8]))
+        self.hard_port.write(b'_ubx_payload')
+        self.hard_port.write(checksum[0])#checksuma
+        self.hard_port.write(checksum[1])#checksumb
+        
         return
 
     def request_packet(self, ubx_class, ubx_id): 
+        
+        self.send_packet(ubx_class, ubx_id)
 
-        packet = ubx_class +  ubx_id
-        checksum = core.Parser._generate_fletcher_checksum(packet)
-        packet = packet + checksum
-        return packet
-         
+        parse_tool = core.Parser([ubx_class])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
             
+    def message_version(self):
 
+        msg = self.send_packet(sp.MON_CLS, 0x36, 0x00)
 
+        parse_tool = core.Parser([sp.MON_CLS, sp.ACK_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def enable_UART1(self, enable):
+        if enable is True: 
+            self.send_packet(sp.CFG_CLS, 0x8a, 0x00)
+
+        parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
                          

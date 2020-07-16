@@ -26,6 +26,37 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
             core.Field('requiredPinState', 'U1'),
         ]) 
     ]),    
+    core.Message(0x00, 'PRT', [
+        core.Field('portID', 'U1'),
+        core.PadByte(repeat=1),
+        core.BitField('txReady', 'X2', [
+            core.Flag('en', 0, 1),
+            core.Flag('pol', 1, 2),
+            core.Flag('pin', 2, 6),
+            core.Flag('thres', 7, 16),
+        ]),
+        core.BitField('mode', 'X4', [
+            core.Flag('charLen', 6, 8),
+            core.Flag('parity', 9, 12),
+            core.Flag('nStopBits', 12, 13),
+        ]),
+        core.Field('baudRate', 'U4'),
+        core.BitField('inProtoMask', 'X2', [
+            core.Flag('inUbx', 0, 1),
+            core.Flag('inNmea', 1, 2),
+            core.Flag('inRtcm', 2, 3),
+            core.Flag('inRtcm3', 5, 6),
+        ]),
+        core.BitField('outProtoMask', 'X2', [
+            core.Flag('outUbx', 0, 1),
+            core.Flag('outNmea', 1, 2),
+            core.Flag('outRtcm3', 5, 6),
+        ]),
+        core.BitField('flags', 'X2', [
+            core.Flag('extendedTxTimeout', 0, 1),
+        ]),
+        core.PadByte(repeat=2)
+    ]),    
     core.Message(0x59, 'PT2', [
         core.Field('version', 'U1'),
         core.BitField('activate', 'X1', [
