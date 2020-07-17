@@ -77,15 +77,26 @@ class UbloxGps(object):
 
         return num_bytes
 
-    def send_message(self, ubx_class, ubx_id, ubx_payload): 
+    def send_message(self, ubx_class, ubx_id, ubx_payload = None): 
 
         SYNC_CHAR1 = 0xB5
         SYNC_CHAR2 = 0x62
 
-        ubx_length = self.count_bytes(ubx_payload)
+        if ubx_payload == b'\x00' or ubx_payload is None:
+            payload_length = 0
+        elif type(ubx_payload) is not bytes:
+            ubx_payload = bytes([ubx_payload])
+            payload_length = len(ubx_payload)
+            
+        if payload_length > 0:
+            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
+                                  ubx_class.id_, ubx_id, (payload_length & 0xFF), 
+                                  (payload_length >> 8)) + ubx_payload
 
-        message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, ubx_class.id_, ubx_id, 
-                              (ubx_length & 0xFF), (ubx_length >> 8))
+        else: 
+            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
+                                  ubx_class.id_, ubx_id, (payload_length & 0xFF), 
+                                  (payload_length >> 8)) 
 
         checksum = core.Parser._generate_fletcher_checksum(message[2:])
 
@@ -103,7 +114,7 @@ class UbloxGps(object):
             
     def message_version(self):
 
-        msg = self.send_message(sp.MON_CLS, 0x0e, 0x00)
+        msg = self.send_message(sp.MON_CLS, 0x0e)
 
         parse_tool = core.Parser([sp.MON_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
@@ -124,7 +135,7 @@ class UbloxGps(object):
         test_list = [0x35, 0x32]
         for i in test_list:
             print(hex(i))
-            self.send_message(sp.NAV_CLS, i, 0x00)
+            self.send_message(sp.NAV_CLS, i)
             parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
             msg = parse_tool.receive_from(self.hard_port) 
             print(msg)
