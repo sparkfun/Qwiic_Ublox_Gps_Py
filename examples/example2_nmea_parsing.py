@@ -37,31 +37,21 @@
 #
 
 from __future__ import print_function
-import qwiic_ublox_gps
+import ublox_gps
 import time
 import sys
+
+# pylint: disable-all
 
 def run_example():
 
     print("SparkFun u-blox GPS!")
-    qwiicGPS = qwiic_ublox_gps.QwiicUbloxGps()
+    gps = UbloxGps(UbloxSpi())
 
-    if qwiicGPS.connected == False:
-        print("Could not connect to to the SparkFun GPS Unit. Double check that\
-              it's wired correctly.", file=sys.stderr)
-        return
-    
-    qwiicGPS.begin()
+    #gps.begin()
 
-    while True:
-
-        # Check if there's data, on 'True', check the gnss_messages dictionary.
-        data_status = qwiicGPS.get_parsed_nmea()
-        if data_status is True:
-            print("Latitude: {}, Longitude: {} \n Time: {}".format(
-                qwiicGPS.gnss_messages['Lat'], 
-                qwiicGPS.gnss_messages['Long'], 
-                qwiicGPS.gnss_messages['Time']))
+    version = gps.get_soft_version()
+    print(version)
 
 if __name__ == '__main__':
     try:
@@ -69,4 +59,3 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, SystemExit) as exErr:
         print("Ending Basic Example.")
         sys.exit(0)
-
