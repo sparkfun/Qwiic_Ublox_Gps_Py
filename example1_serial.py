@@ -19,8 +19,10 @@ def run():
         print("Listening for UBX Packets")
         while True:
             try:
-                msg=gps.get_nav() 
-                print(msg)
+                sats = gps.get_satellites() 
+                for i in range(sats.numSvs): 
+                    print("Sattelite", i)
+                    print(sats.RB[i].elev)
 
             except (ValueError, IOError) as err:
                 print(err)

@@ -67,16 +67,6 @@ class UbloxGps(object):
 #                                       sp.INF_CLS, sp.MGA_CLS, sp.MON_CLS,
 #                                       sp.NAV_CLS, sp.TIM_CLS])
     
-    def count_bytes(self, int_val):
-
-        num_bytes = 0
-
-        while int_val > 0:
-            int_val = int_val >> 8
-            num_bytes = num_bytes + 1
-
-        return num_bytes
-
     def send_message(self, ubx_class, ubx_id, ubx_payload = None): 
 
         SYNC_CHAR1 = 0xB5
@@ -131,11 +121,36 @@ class UbloxGps(object):
                          
 
     def get_nav(self):
-        
-        test_list = [0x35, 0x32]
-        for i in test_list:
-            print(hex(i))
-            self.send_message(sp.NAV_CLS, i)
-            parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
-            msg = parse_tool.receive_from(self.hard_port) 
-            print(msg)
+
+        self.send_message(sp.NAV_CLS, i)
+        parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
+        cls_name, msg_name, payload  = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def get_geo_coords(self):
+
+        self.send_message(sp.NAV_CLS, 0x07)
+        parse_tool = core.Parser([sp.NAV_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def get_date_time(self):
+         
+        self.send_message(sp.NAV_CLS, 0x07)
+        parse_tool = core.Parser([sp.NAV_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def get_satellites(self):
+
+        self.send_message(sp.NAV_CLS, 0x35)
+        parse_tool = core.Parser([sp.NAV_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def get_veh_att(self):
+
+        self.send_message(sp.NAV_CLS, 0x01)
+        parse_tool = core.Parser([sp.NAV_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
