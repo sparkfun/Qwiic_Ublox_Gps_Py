@@ -167,7 +167,7 @@ ESF_CLS = core.Cls(0x10, 'ESF', [
             core.Flag('yAccelValid', 12, 13),
             core.Flag('zAccelValid', 13, 14),
         ]),
-        core.PadByte(repeat=4),
+        core.PadByte(repeat=3),
         core.Field('iTOW','U4'),
         core.Field('xAngRate','I4'),
         core.Field('yAngRate','I4'),
@@ -216,25 +216,27 @@ ESF_CLS = core.Cls(0x10, 'ESF', [
         core.BitField('initStatus2', 'X1', [
             core.Flag('imuInitStatus', 0, 2),
         ]),
-        core.PadByte(repeat=5),
+        core.PadByte(repeat=3),
         core.Field('fusionMode','U1'),
         core.PadByte(repeat=2),
         core.Field('numSens','U1'),
-        core.BitField('senStatus1', 'X1', [
-            core.Flag('type', 0, 6),
-            core.Flag('used', 6, 7),
-            core.Flag('ready', 7, 8),
-        ]),
-        core.BitField('senStatus2', 'X1', [
-            core.Flag('calibStatus', 0, 2),
-            core.Flag('timeStatus', 2, 4),
-        ]),
-        core.Field('freq', 'U1'),
-        core.BitField('faults', 'X1', [
-            core.Flag('badMeas', 0, 1),
-            core.Flag('badTTag', 1, 2),
-            core.Flag('missingMeas', 2, 3),
-            core.Flag('noisyMeas', 3, 4),
+        core.RepeatedBlock('RB', [
+            core.BitField('senStatus1', 'X1', [
+                core.Flag('type', 0, 6),
+                core.Flag('used', 6, 7),
+                core.Flag('ready', 7, 8),
+            ]),
+            core.BitField('senStatus2', 'X1', [
+                core.Flag('calibStatus', 0, 2),
+                core.Flag('timeStatus', 2, 4),
+            ]),
+            core.Field('freq', 'U1'),
+            core.BitField('faults', 'X1', [
+                core.Flag('badMeas', 0, 1),
+                core.Flag('badTTag', 1, 2),
+                core.Flag('missingMeas', 2, 3),
+                core.Flag('noisyMeas', 3, 4),
+            ]),
         ]),
     ]),
     

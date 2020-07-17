@@ -127,30 +127,83 @@ class UbloxGps(object):
         cls_name, msg_name, payload  = parse_tool.receive_from(self.hard_port) 
         return(payload)
 
-    def get_geo_coords(self):
+    def geo_coords(self):
 
         self.send_message(sp.NAV_CLS, 0x07)
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
 
-    def get_date_time(self):
+    def hp_geo_coords(self):
+
+        self.send_message(sp.NAV_CLS, 0x14)
+        parse_tool = core.Parser([sp.NAV_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def date_time(self):
          
         self.send_message(sp.NAV_CLS, 0x07)
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
 
-    def get_satellites(self):
+    def satellites(self):
 
         self.send_message(sp.NAV_CLS, 0x35)
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
 
-    def get_veh_att(self):
+    def veh_attitude(self):
 
         self.send_message(sp.NAV_CLS, 0x01)
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+    
+    def stream_nmea(self):
+
+        return(self.hard_port.read())
+
+    def imu_alignment(self):
+
+        self.send_message(sp.ESF_CLS, 0x14)
+        parse_tool = core.Parser([sp.ESF_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
+        return(payload)
+
+    def vehicle_dynamics(self):
+
+        self.send_message(sp.ESF_CLS, 0x15)
+        parse_tool = core.Parser([sp.ESF_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        return(payload)
+
+    def esf_measures(self):
+
+        self.send_message(sp.ESF_CLS, 0x02)
+        parse_tool = core.Parser([sp.ESF_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        return(payload)
+
+    def esf_raw_measures(self):
+
+        self.send_message(sp.ESF_CLS, 0x03)
+        parse_tool = core.Parser([sp.ESF_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        return(payload)
+
+    def reset_imu_align(self):
+
+        self.send_message(sp.ESF_CLS, 0x13)
+        parse_tool = core.Parser([sp.ACK_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        return(payload)
+
+    def esf_status(self):
+
+        self.send_message(sp.ESF_CLS, 0x10)
+        parse_tool = core.Parser([sp.ESF_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
