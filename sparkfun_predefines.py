@@ -453,7 +453,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Flag('mem', 0, 1),
             core.Flag('alloc', 1, 2),
         ]),
-        core.PadByte(repeat=1),
+        core.PadByte(repeat=0),
         core.Field('protIds', 'U1'),
         core.RepeatedBlock('RB', [
             core.Field('portId','U2'),
@@ -467,7 +467,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('rxPeakUsage','U1'),
             core.Field('overrunErrs','U2'),
             core.Field('msgs','U2'),
-            core.PadByte(repeat=1),
+            core.PadByte(repeat=0),
             core.Field('skipped', 'U4'),
         ]),
     ]), 
@@ -476,33 +476,34 @@ MON_CLS = core.Cls(0x0a, 'MON', [
         core.BitField('supported', 'X1', [
             core.Flag('GPSSup', 0, 1),
             core.Flag('GlonassSup', 1, 2),
-            core.Flag('GalileoSup', 2, 3),
+            core.Flag('BeidouSup', 2, 3),
+            core.Flag('GalileoSup', 3, 4),
         ]),
         core.BitField('defaultGnss', 'X1', [
             core.Flag('GPSDef', 0, 1),
-            core.Flag('GlonassDef', 0, 1),
-            core.Flag('BeidouDef', 0, 1),
-            core.Flag('GalileoDef', 0, 1),
+            core.Flag('GlonassDef', 1, 2),
+            core.Flag('BeidouDef', 2, 3),
+            core.Flag('GalileoDef', 3, 4),
         ]),
         core.BitField('enabled', 'X1', [
             core.Flag('GPSEna', 0, 1),
-            core.Flag('GlonasEna', 0, 1),
-            core.Flag('BeidouEna', 0, 1),
-            core.Flag('GalileoEna', 0, 1),
+            core.Flag('GlonasEna', 1, 2),
+            core.Flag('BeidouEna', 2, 3),
+            core.Flag('GalileoEna', 3, 4),
         ]),
         core.Field('simultaneous', 'U1'),
-        core.PadByte(repeat=3),
+        core.PadByte(repeat=2),
     ]),
     core.Message(0x37, 'HW3', [ #HW and HW2 not implemented
         core.Field('version', 'U1'),
         core.Field('nPins', 'U1'),
         core.BitField('flags', 'X1', [
             core.Flag('rtcCalib', 0, 1),
-            core.Flag('safeBoot', 0, 1),
-            core.Flag('xtalAbsent', 0, 1),
+            core.Flag('safeBoot', 1, 2),
+            core.Flag('xtalAbsent', 2, 3),
         ]),
         core.Field('hwVersion', 'C'),
-        core.PadByte(repeat=9),
+        core.PadByte(repeat=0),
         core.RepeatedBlock('RB', [
             core.Field('pinId', 'U2'),
             core.BitField('pinMask', 'X2', [
@@ -513,10 +514,10 @@ MON_CLS = core.Cls(0x0a, 'MON', [
                 core.Flag('vpManager', 6, 7),
                 core.Flag('pioIrq', 7, 8),
                 core.Flag('pioPullHigh', 8, 9),
-                core.Flag('pioPullLow', 10, 11),
+                core.Flag('pioPullLow', 9, 10),
             ]),
             core.Field('VP', 'U1'),
-            core.PadByte(repeat=1),
+            core.PadByte(repeat=0),
         ]),
     ]),
     core.Message(0x27, 'PATCH', [ 
@@ -535,7 +536,9 @@ MON_CLS = core.Cls(0x0a, 'MON', [
     core.Message(0x24, 'PIO', [ 
         core.Field('version', 'U1'),
         core.Field('responseType', 'U1'),
-        core.Field('pinState', 'U1'),
+        core.RepeatedBlock('RB', [
+            core.Field('pinState', 'U1'),
+        ]),
     ]),
     core.Message(0x2b, 'PT2', [ 
         core.Field('version', 'U1'),
@@ -576,7 +579,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
     core.Message(0x38, 'RF', [ 
         core.Field('version', 'U1'),
         core.Field('nBlocks', 'U1'),
-        core.PadByte(repeat=2),
+        core.PadByte(repeat=1),
         core.RepeatedBlock('RB', [
             core.Field('blockId', 'U1'),
             core.BitField('flags', 'X1', [
@@ -585,15 +588,15 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('antStatus', 'U1'),
             core.Field('antPower', 'U1'),
             core.Field('postStatus', 'U4'),
-            core.PadByte(repeat=4),
+            core.PadByte(repeat=3),
             core.Field('noisePerMS', 'U2'),
             core.Field('agcCnt', 'U2'),
-            core.Field('jamInd', 'U2'),
+            core.Field('jamInd', 'U1'),
             core.Field('ofsI', 'I1'),
             core.Field('magI', 'U1'),
             core.Field('ofsQ', 'I1'),
             core.Field('magQ', 'U1'),
-            core.PadByte(repeat=3),
+            core.PadByte(repeat=2),
         ]),
     ]),
     core.Message(0x21, 'RXR', [ 
