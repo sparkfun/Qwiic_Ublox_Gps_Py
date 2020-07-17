@@ -7,8 +7,7 @@ The serial package could easily be replaced with an alternative.
 """
 import serial
 
-from ubxtranslator import core
-from ublox_gps_new import UbloxGps
+from ublox_gps import UbloxGps
 
 port = serial.Serial('/dev/serial0', baudrate=38400, timeout=1)
 gps = UbloxGps(port)
@@ -19,10 +18,7 @@ def run():
         print("Listening for UBX Packets")
         while True:
             try:
-                sats = gps.get_satellites() 
-                for i in range(sats.numSvs): 
-                    print("Sattelite", i)
-                    print(sats.RB[i].elev)
+                print(gps.ublox_debug())
 
             except (ValueError, IOError) as err:
                 print(err)

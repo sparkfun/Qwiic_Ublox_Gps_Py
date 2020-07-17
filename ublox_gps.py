@@ -102,15 +102,6 @@ class UbloxGps(object):
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
             
-    def message_version(self):
-
-        msg = self.send_message(sp.MON_CLS, 0x0e)
-
-        parse_tool = core.Parser([sp.MON_CLS, sp.ACK_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-
-        return(msg)
-
     def enable_UART1(self, enable):
         if enable is True: 
             self.send_message(sp.CFG_CLS, 0x04, 0x00)
@@ -207,3 +198,81 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
+    
+    def port_settings(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x36)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def module_gnss_support(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x28)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def pin_settings(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x37)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def installed_patches(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x27)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def prod_test_pio(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x24)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def prod_test_monitor(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x2b)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def rf_ant_status(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x38)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+
+    def module_wake_state(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x21)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def sensor_production_test(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x2f)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def temp_val_state(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x0e)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+    def module_software_version(self):
+
+        msg = self.send_message(sp.MON_CLS, 0x04)
+        parse_tool = core.Parser([sp.MON_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
