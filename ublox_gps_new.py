@@ -77,30 +77,25 @@ class UbloxGps(object):
 
         return num_bytes
 
-    def send_packet(self, _ubx_class, _ubx_id, _ubx_payload): 
+    def send_message(self, ubx_class, ubx_id, ubx_payload): 
 
         SYNC_CHAR1 = 0xB5
         SYNC_CHAR2 = 0x62
 
-        _ubx_length = self.count_bytes(_ubx_payload)
+        ubx_length = self.count_bytes(ubx_payload)
 
-        packet = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, _ubx_class.id_, _ubx_id, 
-                             _ubx_length, _ubx_payload)
+        message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, ubx_class.id_, ubx_id, 
+                              (ubx_length & 0xFF), (ubx_length >> 8))
 
-        checksum = core.Parser._generate_fletcher_checksum(packet[2:])
+        checksum = core.Parser._generate_fletcher_checksum(message[2:])
 
-
-        for char in struct.iter_unpack('B',packet):
-            self.hard_port.write(char)
-
-        self.hard_port.write(bytes([checksum[0]]))
-        self.hard_port.write(bytes([checksum[1]]))
+        self.hard_port.write(message + checksum)
         
         return
 
-    def request_packet(self, ubx_class, ubx_id): 
+    def request_message(self, ubx_class, ubx_id): 
         
-        self.send_packet(ubx_class, ubx_id)
+        self.send_message(ubx_class, ubx_id)
 
         parse_tool = core.Parser([ubx_class])
         msg = parse_tool.receive_from(self.hard_port) 
@@ -108,7 +103,7 @@ class UbloxGps(object):
             
     def message_version(self):
 
-        msg = self.send_packet(sp.MON_CLS, 0x0e, 0x00)
+        msg = self.send_message(sp.MON_CLS, 0x0e, 0x00)
 
         parse_tool = core.Parser([sp.MON_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
@@ -117,7 +112,7 @@ class UbloxGps(object):
 
     def enable_UART1(self, enable):
         if enable is True: 
-            self.send_packet(sp.CFG_CLS, 0x04, 0x00)
+            self.send_message(sp.CFG_CLS, 0x04, 0x00)
 
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
@@ -125,8 +120,11 @@ class UbloxGps(object):
                          
 
     def get_nav(self):
-
-        self.send_packet(sp.NAV_CLS, 0x22, 0x00)
-        parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        
+        test_list = [0x35, 0x32]
+        for i in test_list:
+            print(hex(i))
+            self.send_message(sp.NAV_CLS, i, 0x00)
+            parse_tool = core.Parser([sp.NAV_CLS, sp.ACK_CLS])
+            msg = parse_tool.receive_from(self.hard_port) 
+            print(msg)

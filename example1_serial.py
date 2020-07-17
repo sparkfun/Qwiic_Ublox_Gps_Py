@@ -21,6 +21,7 @@ def run():
             try:
                 msg=gps.get_nav() 
                 print(msg)
+
             except (ValueError, IOError) as err:
                 print(err)
 
