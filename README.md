@@ -33,15 +33,18 @@ Qwiic_Ublox_Gps_Py
     <td><a href="https://www.sparkfun.com/products/15193">SparkFun ZOE-M8Q Breakout (GPS-15193)</a></td>
     <td><a href="https://www.sparkfun.com/products/15210">SparkFun SAM-M8Q Breakout (GPS-15210)</a></td>
   </tr>
+   <td><a href="https://www.sparkfun.com/products/16344"><img src="https://cdn.sparkfun.com/assets/parts/1/5/0/5/9/16344-SparkFun_GPS-RTK_Dead_Reckoning_Breakout_-_ZED-F9R__Qwiic_-01a.jpg"></a></td>
+   <td><a href="https://www.sparkfun.com/products/16475"><img src="https://cdn.sparkfun.com/assets/parts/1/5/3/3/9/16475-SparkFun_GPS-RTK_Dead_Reckoning_pHAT_for_Raspberry_Pi-01.jpg"></a></td>
+   <td><a href="https://www.sparkfun.com/products/15733"><img src="https://cdn.sparkfun.com/assets/parts/1/4/2/9/3/15712-SparkFun_GPS_Breakout_-_NEO-M9N__U.FL__Qwiic_-01.jpg"></a></td>
+  </tr>
+  <tr align="center">
+    <td><a href="https://www.sparkfun.com/products/16344">SparkFun GPS-RTK Dead Reckoning - ZED-F9R (GPS-16344)</a></td>
+    <td><a href="https://www.sparkfun.com/products/16475">SparkFun GPS-RTK Dead Reckoning Phat- ZED-F9R (GPS-16475)</a></td>
+    <td><a href="https://www.sparkfun.com/products/15733">SparkFun GPS Dead Reckoning - NEO-M9N (GPS-15733)</a></td>
 </table>
 
 This is a Python module for the SparkFun GPS products based on u-blox GPS modules.
 	
-## Library is not functional :warning:
-* Clock stretching on the Raspberry Pi is absolutely necessary for this library
-	to function. 
-* **Clock Stretching** is not yet implemented on the Raspbery Pi!!
-
 This package should be used in conjunction with the overall [SparkFun qwiic Python Package](https://github.com/sparkfun/Qwiic_Py). New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.sparkfun.com/qwiic).
 
 ## Contents
@@ -62,7 +65,7 @@ The qwiic u-blox gps Python package current supports the following platforms:
 
 Dependencies 
 ---------------
-This package depends on the qwiic I2C driver: [Qwiic_I2C_Py](https://github.com/sparkfun/Qwiic_I2C_Py)
+This package depends on the [ubxtranslator library](https://github.com/dalymople/ubxtranslator/tree/master/ubxtranslator).
 
 Documentation
 -------------
@@ -77,13 +80,11 @@ This repository is hosted on PyPi as the [sparkfun-qwiic-pca9685](https://pypi.o
 For all users (note: the user must have sudo privileges):
 ```sh
 sudo pip install sparkfun-qwiic-ublox-gps
-sudo pip install pynmea2
 ```
 For the current user:
 
 ```sh
 sudo pip install sparkfun-qwiic-ublox-gps
-sudo pip install pynmea2
 ```
 
 ### Local Installation
@@ -101,49 +102,39 @@ python setup.py sdist
 A package file is built and placed in a subdirectory called dist. This package file can be installed using pip.
 ```sh
 cd dist
-pip install sparkfun_qwiic_qwiib_ublox_gps-<version>.tar.gz
+pip install sparkfun_qwiic__ublox_gps-<version>.tar.gz
   
 ```
 Example Use
 ---------------
 
 ```python
-from __future__ import print_function
-import qwiic_gps_ublox
-import time
-import sys
 
-def run_example():
+from ublox_gps import UbloxGps
+import serial
+# Can also use SPI here - import spidev
+# I2C is not supported
 
-    print("SparkFun u-blox GPS!")
-    qwiicGPS = qwiic_gps_ublox.QwiicGpsUblox()
+port = serial.Serial('/dev/serial0', baudrate=38400, timeout=1)
+gps = UbloxGps(port)
 
-    if qwiicGPS.connected == False:
-        print("Could not connect to to the SparkFun GPS Unit. Double check that\
-              it's wired correctly.", file=sys.stderr)
-        return
-    
-    qwiicGPS.begin()
-
+def run():
+  
+  try: 
+    print("Listenting for UBX Messages.")
     while True:
-
-        # Check if there's data, on 'True', check the gnss_messages dictionary.
-        data_status = qwiicGPS.get_parsed_nmea()
-        if data_status is True:
-            print("Latitude: {}, Longitude: {}. ".format(
-                qwiicGPS.gnss_messages['Latitude'], 
-                qwiicGPS.gnss_messages['Longitude']))
-
-            print("Altitude: {}, Number of Satellites: {}. ".format(
-                qwiicGPS.gnss_messages['Altitude'], 
-                qwiicGPS.gnss_messages['Sat_Number']))
+      try: 
+        coords = gps.geo_coords()
+        print(coords.lon, coords.lat)
+      except (ValueError, IOError) as err:
+        print(err)
+  
+  finally:
+    port.close()
 
 if __name__ == '__main__':
-    try:
-        run_example()
-    except (KeyboardInterrupt, SystemExit) as exErr:
-        print("Ending Basic Example.")
-        sys.exit(0)
+  run()
  ```
 
 See the examples directory for more detailed use examples.
+
