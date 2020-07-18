@@ -50,6 +50,7 @@
 from ubxtranslator import core
 
 import serial
+import spidev
 import struct
 import sparkfun_predefines as sp
 
@@ -58,14 +59,12 @@ class UbloxGps(object):
     def __init__(self, hard_port = None):
         if hard_port is None: 
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
-        else:
-            self.hard_port = hard_port 
+        elif type(hard_port) == spidev.SpiDev:
+            sfeSpi = sfe_spi_wrapper(hard_port)
+            self.hard_port = sfeSpi
+        else: 
+            self.hard_port = hard_port
 
-        # Add SPI here
-
-#        self.parse_tool = core.Parser([sp.ACK_CLS, sp.CFG_CLS, sp.ESF_CLS,
-#                                       sp.INF_CLS, sp.MGA_CLS, sp.MON_CLS,
-#                                       sp.NAV_CLS, sp.TIM_CLS])
     
     def send_message(self, ubx_class, ubx_id, ubx_payload = None): 
 
@@ -89,7 +88,7 @@ class UbloxGps(object):
                                   (payload_length >> 8)) 
 
         checksum = core.Parser._generate_fletcher_checksum(message[2:])
-
+        
         self.hard_port.write(message + checksum)
         
         return
@@ -276,3 +275,32 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
+
+class sfe_spi_wrapper(object):
+
+    def __init__(self, spi_port = None):
+
+        if spi_port is None:
+            self.spi_port = spidev.SpiDev()
+        else:
+            self.spi_port = spi_port
+
+        self.spi_port.open(0,0)
+        self.spi_port.max_speed_hz = 5500 #Hz
+        self.spi_port.mode = 0b00
+        
+    def read(self, readData = 1): 
+
+        data = self.spi_port.readbytes(readData)
+        byte_data = bytes([])
+        for d in data: 
+            byte_data = byte_data + bytes([d])
+        return byte_data
+
+    def write(self, data):
+        
+        self.spi_port.xfer(list(data))
+
+        return True
+            
+            
