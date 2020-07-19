@@ -1,17 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #-----------------------------------------------------------------------------
-# qwiic_gps_basic_nmea_ex1.py
+# geo_coords_ex1.py
 #
 # Simple Example for SparkFun ublox GPS products 
 #------------------------------------------------------------------------
 #
-# Written by  SparkFun Electronics, October 2019
+# Written by  SparkFun Electronics, July 2020
 # 
-#
-# More information on qwiic is at https://www.sparkfun.com/qwiic
-#
 # Do you like this library? Help support SparkFun. Buy a board!
-#
+# https://sparkfun.com
 #==================================================================================
 # Copyright (c) 2019 SparkFun Electronics
 #
@@ -34,28 +31,33 @@
 # SOFTWARE.
 #==================================================================================
 # Example 1
-#
+# This example sets up the serial port and then passes it to the UbloxGPs
+# library. From here we call geo_coords() and to get longitude and latitude. I've
+# also included heading of motion here as well. 
 
-from __future__ import print_function
-import ublox_gps
-import time
-import sys
+import serial
 
-# pylint: disable-all
+from ublox_gps import UbloxGps
 
-def run_example():
+port = serial.Serial('/dev/serial0', baudrate=38400, timeout=1)
+gps = UbloxGps(port)
 
-    print("SparkFun u-blox GPS!")
-    gps = UbloxGps(UbloxSpi())
+def run():
 
-    #gps.begin()
+    try:
+        print("Listening for UBX Messages")
+        while True:
+            try:
+                geo = gps.geo_coords()
+                print("Longitude: ", geo.lon) 
+                print("Latitude: ", geo.lat)
+                print("Heading of Motion: ", geo.headMot)
+            except (ValueError, IOError) as err:
+                print(err)
 
-    version = gps.get_soft_version()
-    print(version)
+    finally:
+        port.close()
+
 
 if __name__ == '__main__':
-    try:
-        run_example()
-    except (KeyboardInterrupt, SystemExit) as exErr:
-        print("Ending Basic Example.")
-        sys.exit(0)
+    run()

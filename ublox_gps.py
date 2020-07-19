@@ -95,42 +95,6 @@ class UbloxGps(object):
         
         return True
 
-    def send_cfg_key(self, ubx_class, ubx_id, payload):
-
-        SYNC_CHAR1 = 0xB5
-        SYNC_CHAR2 = 0x62
-        
-        if type(payload) != bytes:
-            payload = bytes([payload])
-
-        if len(payload) > 255:
-
-            eight_bit_chunks = []
-            while payload > 0: 
-                eight_bit_chunks.append(payload & 0xFF)
-                payload >> 8 
-            
-        message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
-                              ubx_class.id_, ubx_id, (payload_length & 0xFF), 
-                              (payload_length >> 8)) + ubx_payload
-
-        checksum = core.Parser._generate_fletcher_checksum(message[2:])
-
-        for i,b in enumerate(eight_bit_chunks):
-            self.hard_port.write(b)
-
-        self.hard_port.write(checksum)
-        
-        return
-
-    def request_message(self, ubx_class, ubx_id): 
-        
-        self.send_message(ubx_class, ubx_id)
-
-        parse_tool = core.Parser([ubx_class])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
-            
     def enable_UART1(self, enable):
         if enable is True: 
             self.send_message(sp.CFG_CLS, 0x04, 0x00)
@@ -177,14 +141,14 @@ class UbloxGps(object):
 
     def veh_attitude(self):
 
-        self.send_message(sp.NAV_CLS, 0x01)
+        self.send_message(sp.NAV_CLS, 0x05)
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
     
     def stream_nmea(self):
 
-        return(self.hard_port.read())
+        return(self.hard_port.readline().decode('utf-8'))
 
     def imu_alignment(self):
 
@@ -306,7 +270,7 @@ class UbloxGps(object):
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
     
-    def ublox_val_get(self, key):
+    def ubx_get_set_del(self, key):
 
         key_bytes = bytes([])
         if type(key) != bytes:
