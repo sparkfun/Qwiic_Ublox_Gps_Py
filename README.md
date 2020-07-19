@@ -45,7 +45,7 @@ Qwiic_Ublox_Gps_Py
 
 This is a Python module for the SparkFun GPS products based on u-blox GPS modules.
 	
-This package should be used in conjunction with the overall [SparkFun qwiic Python Package](https://github.com/sparkfun/Qwiic_Py). New to qwiic? Take a look at the entire [SparkFun qwiic ecosystem](https://www.sparkfun.com/qwiic).
+This package is included in the overall [SparkFun qwiic Python Package](https://github.com/sparkfun/Qwiic_Py). While the module itself does not use I<sup>2</sup>C, it may none the less join the ranks when the Raspberry Pi has better support for clock stretching. None the less, a Qwiic connector has been included onboard so the GPS module can be used with our along side SparkFun's Qwiic products.
 
 ## Contents
 * [Supported Platforms](#supported-platforms)
@@ -56,7 +56,7 @@ This package should be used in conjunction with the overall [SparkFun qwiic Pyth
 
 Supported Platforms
 --------------------
-The qwiic u-blox gps Python package current supports the following platforms:
+The u-blox gps Python package currently supports the following platforms:
 * [Raspberry Pi](https://www.sparkfun.com/search/results?term=raspberry+pi)
 <!-- Platforms to be tested
 * [NVidia Jetson Nano](https://www.sparkfun.com/products/15297)
@@ -69,22 +69,22 @@ This package depends on the [ubxtranslator library](https://github.com/dalymople
 
 Documentation
 -------------
-The SparkFun qwiic u-blox gps module documentation is hosted at [ReadTheDocs](https://qwiic-pca9685-py.readthedocs.io/en/latest/?)
+The SparkFun u-blox gps module documentation is hosted at [ReadTheDocs](https://readthedocs.io/)
 
 Installation
 -------------
 
 ### PyPi Installation
-This repository is hosted on PyPi as the [sparkfun-qwiic-pca9685](https://pypi.org/project/sparkfun-qwiic-pca9685/) package. On systems that support PyPi installation via pip, this library is installed using the following commands
+This repository is hosted on PyPi as the [sparkfun-ublox_gps](https://pypi.org/project/) package. On systems that support PyPi installation via pip, this library is installed using the following commands
 
 For all users (note: the user must have sudo privileges):
 ```sh
-sudo pip install sparkfun-qwiic-ublox-gps
+sudo pip install sparkfun-ublox-gps
 ```
 For the current user:
 
 ```sh
-sudo pip install sparkfun-qwiic-ublox-gps
+sudo pip install sparkfun-ublox-gps
 ```
 
 ### Local Installation
@@ -102,7 +102,7 @@ python setup.py sdist
 A package file is built and placed in a subdirectory called dist. This package file can be installed using pip.
 ```sh
 cd dist
-pip install sparkfun_qwiic__ublox_gps-<version>.tar.gz
+pip install sparkfun_ublox_gps-<version>.tar.gz
   
 ```
 Example Use
@@ -136,5 +136,32 @@ if __name__ == '__main__':
   run()
  ```
 
-See the examples directory for more detailed use examples.
+### Examples Directory
+---
+* geo_coords_ex1.py 
+	* Simple example showing how to get and print out latitude, longitude, and
+		heading. 
+* gps_time_ex2.py 
+	* Simple example showing how to UTC time and how to check its' validity.
+* dead_reckoning_ex3.py 
+	* Simple example showing how to use dead reckoning on dead reckoning modules.
+		Make sure to take a look at our [hookup guide](https://learn.sparkfun.com/tutorials/sparkfun-gps-rtk-dead-reckoning-zed-f9r-hookup-guide) for a detailed explanation on
+		where to attach the module and how to calibrate it. 
+* stream_nmea_gps_ex4.py 
+	* Simple example showing how to stream NMEA data from Ublox Modules.
+* modifying_configuration_settings_ex5.py 
+	* Simple example showing how change the configuration settings for the Ublox
+		Module. 
+* using_spi_ex6.py 
+	* Simple example showing how to use SPI. 
+		Module. 
+
+### To Do
+---
+* [ ] Some bugs associated with SPI writes.
+* [ ] Add more Classes and Messages to `sparkfun_predefines.py` so that a
+	greater variety of messages can be parsed. 
+* [ ] Fix bug when getting configuration settings. 
+	
+
 
