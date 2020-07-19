@@ -76,7 +76,9 @@ class UbloxGps(object):
         elif type(ubx_payload) is not bytes:
             ubx_payload = bytes([ubx_payload])
             payload_length = len(ubx_payload)
-            
+        else:
+            payload_length = len(ubx_payload)
+        
         if payload_length > 0:
             message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
                                   ubx_class.id_, ubx_id, (payload_length & 0xFF), 
@@ -88,8 +90,36 @@ class UbloxGps(object):
                                   (payload_length >> 8)) 
 
         checksum = core.Parser._generate_fletcher_checksum(message[2:])
-        
+
         self.hard_port.write(message + checksum)
+        
+        return True
+
+    def send_cfg_key(self, ubx_class, ubx_id, payload):
+
+        SYNC_CHAR1 = 0xB5
+        SYNC_CHAR2 = 0x62
+        
+        if type(payload) != bytes:
+            payload = bytes([payload])
+
+        if len(payload) > 255:
+
+            eight_bit_chunks = []
+            while payload > 0: 
+                eight_bit_chunks.append(payload & 0xFF)
+                payload >> 8 
+            
+        message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
+                              ubx_class.id_, ubx_id, (payload_length & 0xFF), 
+                              (payload_length >> 8)) + ubx_payload
+
+        checksum = core.Parser._generate_fletcher_checksum(message[2:])
+
+        for i,b in enumerate(eight_bit_chunks):
+            self.hard_port.write(b)
+
+        self.hard_port.write(checksum)
         
         return
 
@@ -275,6 +305,22 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
+    
+    def ublox_val_get(self, key):
+
+        key_bytes = bytes([])
+        if type(key) != bytes:
+            while key > 0: 
+                key_bytes = key_bytes + bytes([(key & 0xFF)])
+                key = key >> 8 
+                
+        key_bytes = key_bytes[::-1]
+        msg = self.send_message(sp.CFG_CLS, 0x8b, key_bytes)
+        parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
+        msg = parse_tool.receive_from(self.hard_port) 
+        return(msg)
+
+
 
 class sfe_spi_wrapper(object):
 
@@ -289,9 +335,9 @@ class sfe_spi_wrapper(object):
         self.spi_port.max_speed_hz = 5500 #Hz
         self.spi_port.mode = 0b00
         
-    def read(self, readData = 1): 
+    def read(self, read_data = 1): 
 
-        data = self.spi_port.readbytes(readData)
+        data = self.spi_port.readbytes(read_data)
         byte_data = bytes([])
         for d in data: 
             byte_data = byte_data + bytes([d])
@@ -299,7 +345,7 @@ class sfe_spi_wrapper(object):
 
     def write(self, data):
         
-        self.spi_port.xfer(list(data))
+        self.spi_port.xfer2(list(data))
 
         return True
             
