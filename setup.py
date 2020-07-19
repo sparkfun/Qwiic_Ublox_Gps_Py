@@ -46,12 +46,12 @@ with io.open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
 
 setup(
 
-    name='sparkfun_qwiic_ublox_gps',
+    name='sparkfun_ublox_gps',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # http://packaging.python.org/en/latest/tutorial.html#version
-    version='0.9.7',
+    version='1.0.0',
 
     description='SparkFun Electronics Python Package for u-blox GPS modules.',
     long_description=long_description,
@@ -64,8 +64,9 @@ setup(
     author_email='info@sparkfun.com',
 
     install_requires=[
-        'sparkfun_qwiic_i2c',
-        'pynmea2',
+        'ubxtranslator',
+        'pyserial',
+        'spidev'
     ],
 
     # Choose your license
@@ -91,10 +92,11 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ],
 
     # What does your project relate to?
-    keywords='electronics, maker',
+    keywords='electronics, maker, gps',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
