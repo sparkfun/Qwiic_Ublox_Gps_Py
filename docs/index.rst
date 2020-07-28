@@ -26,12 +26,16 @@ Table of Contents
 
    ex1
    ex2
+   ex3
+   ex4
+   ex5
+   ex6
 
 .. toctree::
    :caption: Other Links
 
 	SparkFun <https://sparkfun.com>
-   SparkFun Ublox Gps Products <https://www.sparkfun.com/gps>
+  SparkFun Ublox Gps Products <https://www.sparkfun.com/gps>
 	GitHub <https://github.com/sparkfun/Qwiic_Ublox_Gps_Py>
 	SparkFun qwiic <https://www.sparkfun.com/qwiic>
 

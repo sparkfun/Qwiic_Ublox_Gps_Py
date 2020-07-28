@@ -1,7 +1,7 @@
 
 Basic Operation
 ---------------------------
-.. literalinclude:: ../examples/example1_basic_nmea_ready.py
-    :caption: examples/example1_basic_nmea_ready.py
+.. literalinclude:: ../examples/geo_coords_ex1.py
+    :caption: examples/geo_coords_ex1.py
     :linenos:
 

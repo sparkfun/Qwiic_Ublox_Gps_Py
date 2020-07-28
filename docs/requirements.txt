@@ -1,3 +1,2 @@
+ubxtranslator
 m2r
-sparkfun-qwiic-i2c
-pynmea2

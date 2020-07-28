@@ -473,7 +473,7 @@ class UbloxGps(object):
 
 
 
-class sfeSpiWrapper(object):
+class sfe_spi_wrapper(object):
     """
     sfe_spi_wrapper
 

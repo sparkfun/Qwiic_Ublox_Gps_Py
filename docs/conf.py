@@ -17,12 +17,12 @@ sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'sparkfun_qwiic_ublox_gps'
-copyright = '2019, SparkFun Electronics'
+project = 'sparkfun_ublox_gps'
+copyright = '2020, SparkFun Electronics'
 author = 'SparkFun Electronics'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.9'
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------

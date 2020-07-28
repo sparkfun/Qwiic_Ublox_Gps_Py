@@ -1,6 +1,6 @@
 
 Basic Operation
 ---------------------------
-.. literalinclude:: ../examples/example2_nmea_parsing.py
-    :caption: examples/example2_nmea_parsing.py
+.. literalinclude:: ../examples/gps_time_ex2.py
+    :caption: examples/gps_time_ex2.py
     :linenos:

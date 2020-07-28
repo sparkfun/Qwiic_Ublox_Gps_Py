@@ -1,5 +1,5 @@
 API Reference
 ==============
 
-.. automodule:: qwiic_ublox_gps
+.. automodule:: ublox_gps
    :members:
