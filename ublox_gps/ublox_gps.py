@@ -77,7 +77,47 @@ class UbloxGps(object):
         else: 
             self.hard_port = hard_port
 
-    
+        # Class message values
+        self.ack_ms= {
+            'ACK':0x01, 'NAK':0x00 
+        }
+        self.cfg_ms= {
+            'OTP':0x41,    'PIO':0x2c,      'PRT':0x00,     'PT2':0x59,     'RST':0x04,
+            'SPT':0x64,    'USBTEST':0x58,  'VALDEL':0x8c,  'VALGET':0x8b,
+            'VALSET':0x8a
+        }
+        self.esf_ms= {
+            'ALG':0x14,       'INS':0x15,    'MEAS':0x02,  'RAW':0x03,
+            'RESETALG':0x13,  'STATUS':0x10
+        }
+        self.inf_ms= {
+            'DEBUG':0x04,  'ERROR':0x00,   'NOTICE':0x02,
+            'TEST':0x03,   'WARNING':0x01
+        }
+        self.mga_ms= {
+            'ACK':0x60,       'BDS_EPH':0x03,
+            'BDS_ALM':0x03,   'BDS_HEALTH':0x03,      'BDS_UTC':0x03,
+            'DBD_POLL':0x80,  'DBD_IO':0x80,          'GAL_EPH':0x02,
+            'GAL_ALM':0x02,   'GAL_TIMEOFFSET':0x02,  'GAL_UTC':0x02
+        }
+        self.mon_ms= {
+            'COMMS':0x36,  'GNSS':0x28,  'HW3':0x37,  'PATCH':0x27,
+            'PIO':0x24,    'PT2':0x2b,   'RF':0x38,   'RXR':0x21,
+            'SPT':0x2f
+        }
+        self.nav_ms= {
+            'ATT':0x05,        'CLOCK':0x22,     'COV':0x36,
+            'DOP':0x04,        'EELL':0x3d,      'EOE':0x61,        'GEOFENCE':0x39,
+            'HPPOSECEF':0x13,  'HPPOSLLH':0x14,  'ORB':0x34,        'POSECEF':0x01,
+            'POSLLH':0x02,     'PVT':0x07,       'RELPOSNED':0x3c,  'SAT':0x35,
+            'SBAS':0x32,       'SIG':0x43,       'STATUS':0x03,     'TIMBDS':0x24,
+            'TIMEGAL':0x25,    'TIMEGLO':0x23,   'TIMEGPS':0x20,    'TIMELS':0x25,
+            'TIMEQZSS':0x27,   'TIMEUTC':0x21,   'VELECEF':0x11,    'VELNED':0x12
+        } 
+        self.time_ms= {
+            'TM2':0x03, 'TP':0x01, 'VRFY':0x06
+        }
+
     def send_message(self, ubx_class, ubx_id, ubx_payload = None): 
         """
         Sends a ublox message to the ublox module.
@@ -138,14 +178,14 @@ class UbloxGps(object):
                 key_id = key_id >> 8 
                 
         key_id_bytes = key_id_bytes[::-1]
-        msg = self.send_message(sp.CFG_CLS, 0x8b, key_id_bytes)
+        msg = self.send_message(sp.CFG_CLS, self.cfg_ms.get('VALGET'), key_id_bytes)
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
 
     def enable_UART1(self, enable):
         if enable is True: 
-            self.send_message(sp.CFG_CLS, 0x04, 0x00)
+            self.send_message(sp.CFG_CLS, self.cfg_ms.get('RST'), 0x00)
 
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
@@ -160,7 +200,7 @@ class UbloxGps(object):
         :return: The payload of the NAV Class and PVT Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.NAV_CLS, 0x07)
+        self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -174,7 +214,7 @@ class UbloxGps(object):
         :return: The payload of the NAV Class and HPPOSLLH Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.NAV_CLS, 0x14)
+        self.send_message(sp.NAV_CLS, self.nav_ms.get('HPPOSLLH'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -188,7 +228,7 @@ class UbloxGps(object):
         :return: The payload of the NAV Class and PVT Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.NAV_CLS, 0x07)
+        self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -202,7 +242,7 @@ class UbloxGps(object):
         :return: The payload of the NAV Class and SAT Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.NAV_CLS, 0x35)
+        self.send_message(sp.NAV_CLS, self.nav_ms.get('SAT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -216,7 +256,7 @@ class UbloxGps(object):
         :return: The payload of the NAV Class and ATT Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.NAV_CLS, 0x05)
+        self.send_message(sp.NAV_CLS, self.nav_ms.get('ATT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -240,7 +280,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and ALG Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.ESF_CLS, 0x14)
+        self.send_message(sp.ESF_CLS, self.esf_ms.get('ALG'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
         return(payload)
@@ -268,7 +308,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and MEAS Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.ESF_CLS, 0x02)
+        self.send_message(sp.ESF_CLS, self.esf_ms.get('MEAS'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
@@ -282,7 +322,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and RAW Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.ESF_CLS, 0x03)
+        self.send_message(sp.ESF_CLS, self.esf_ms.get('RAW'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
@@ -296,7 +336,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and RESETALG Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.ESF_CLS, 0x13)
+        self.send_message(sp.ESF_CLS, self.esf_ms.get('RESETALG'))
         parse_tool = core.Parser([sp.ACK_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
@@ -310,7 +350,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and STATUS Message ID
         :rtype: namedtuple
         """
-        self.send_message(sp.ESF_CLS, 0x10)
+        self.send_message(sp.ESF_CLS, self.esf_ms.get('STATUS'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return(payload)
@@ -324,7 +364,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and COMMS Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x36)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('COMMS'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -338,7 +378,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and GNSS Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x28)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('GNSS'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -352,7 +392,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and HW3 Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x37)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('HW3'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -366,7 +406,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and HW3 Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x27)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('HW3'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -380,7 +420,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and PIO Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x24)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('PIO'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -394,7 +434,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and PT2 Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x2b)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('PT2'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -408,7 +448,7 @@ class UbloxGps(object):
         :return: The payload of the ESF Class and RF Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x38)
+        msg = self.send_message(sp.MON_CLS, self.esf_ms.get('RF'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -420,10 +460,10 @@ class UbloxGps(object):
         parses ublox messages for the response. The payload is extracted from 
         the response which is then passed to the user. 
 
-        :return: The payload of the ESF Class and RXR Message ID
+        :return: The payload of the MON Class and RXR Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x21)
+        msg = self.send_message(sp.MON_CLS, self.mon_ms.get('RXR'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -434,10 +474,10 @@ class UbloxGps(object):
         parses ublox messages for the response. The payload is extracted from 
         the response which is then passed to the user. 
 
-        :return: The payload of the ESF Class and SPT Message ID
+        :return: The payload of the MON Class and SPT Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x2f)
+        msg = self.send_message(sp.MON_CLS, self.mon_ms.get('SPT'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -448,10 +488,10 @@ class UbloxGps(object):
         parses ublox messages for the response. The payload is extracted from 
         the response which is then passed to the user. 
 
-        :return: The payload of the ESF Class and TEMP Message ID
+        :return: The payload of the MON Class and TEMP Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x0e)
+        msg = self.send_message(sp.MON_CLS, self.mon_ms.get('TEMP'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
@@ -462,10 +502,10 @@ class UbloxGps(object):
         parses ublox messages for the response. The payload is extracted from 
         the response which is then passed to the user. 
 
-        :return: The payload of the ESF Class and VER Message ID
+        :return: The payload of the MON Class and VER Message ID
         :rtype: namedtuple
         """
-        msg = self.send_message(sp.MON_CLS, 0x04)
+        msg = self.send_message(sp.MON_CLS, self.mon_ms.get('VER'))
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
