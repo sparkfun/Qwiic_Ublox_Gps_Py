@@ -204,7 +204,8 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        s_payload = self.scale_NAV_tuple(payload) 
+        return(s_payload)
 
     def hp_geo_coords(self):
         """
@@ -218,7 +219,8 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('HPPOSLLH'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        s_payload = self.scale_NAV_tuple(payload) 
+        return(s_payload)
 
     def date_time(self):
         """
@@ -232,7 +234,8 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        s_payload = self.scale_NAV_tuple(payload) 
+        return(s_payload)
 
     def satellites(self):
         """
@@ -246,7 +249,8 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('SAT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        s_payload = self.scale_NAV_tuple(payload) 
+        return(s_payload)
 
     def veh_attitude(self):
         """
@@ -260,7 +264,8 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('ATT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        s_payload = self.scale_NAV_tuple(payload) 
+        return(s_payload)
     
     def stream_nmea(self):
         """
