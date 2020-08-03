@@ -47,8 +47,6 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
-from math import exp
-
 import core
 import serial
 import spidev
@@ -204,7 +202,7 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_tuple(payload) 
+        s_payload = self.scale_NAV_PVT(payload) 
         return(s_payload)
 
     def hp_geo_coords(self):
@@ -219,7 +217,7 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('HPPOSLLH'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_tuple(payload) 
+        s_payload = self.scale_NAV_HPPOSLLH(payload) 
         return(s_payload)
 
     def date_time(self):
@@ -234,7 +232,7 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_tuple(payload) 
+        s_payload = self.scale_NAV_PVT(payload) 
         return(s_payload)
 
     def satellites(self):
@@ -249,7 +247,7 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('SAT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_tuple(payload) 
+        s_payload = self.scale_NAV_SAT(payload) 
         return(s_payload)
 
     def veh_attitude(self):
@@ -264,7 +262,7 @@ class UbloxGps(object):
         self.send_message(sp.NAV_CLS, self.nav_ms.get('ATT'))
         parse_tool = core.Parser([sp.NAV_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_tuple(payload) 
+        s_payload = self.scale_NAV_ATT(payload) 
         return(s_payload)
     
     def stream_nmea(self):
@@ -516,7 +514,7 @@ class UbloxGps(object):
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
 
-    def scale_NAV_tuple(self, nav_payload): 
+    def scale_NAV_ATT(self, nav_payload):
 
         att_roll = nav_payload.roll
         att_pitch = nav_payload.pitch
@@ -524,11 +522,15 @@ class UbloxGps(object):
         att_roll_acc = nav_payload.accPitch
         att_head_acc = nav_payload.accHeading
 
-        nav_payload._replace(roll= att_roll*math.exp(-5))
-        nav_payload._replace(pitch= att_pitch*math.exp(-5))
-        nav_payload._replace(heading= att_head*math.exp(-5))
-        nav_payload._replace(accPitch= att_roll_acc*math.exp(-5))
-        nav_payload._replace(accHeading= att_head_acc*math.exp(-5))
+        nav_payload = nav_payload._replace(roll= att_roll * (10**-5))
+        nav_payload = nav_payload._replace(pitch= att_pitch * (10**-5))
+        nav_payload = nav_payload._replace(heading= att_head * (10**-5))
+        nav_payload = nav_payload._replace(accPitch= att_roll_acc * (10**-5))
+        nav_payload = nav_payload._replace(accHeading= att_head_acc * (10**-5))
+
+        return nav_payload
+
+    def scale_NAV_DOP(self, nav_payload):
 
         geo_dop = nav_payload.gDOP
         pos_dop = nav_payload.pDOP
@@ -538,27 +540,38 @@ class UbloxGps(object):
         north_dop = nav_payload.nDOP
         east_dop = nav_payload.eDOP
 
-        nav_payload._replace(gDOP= geo_dop * 0.01)
-        nav_payload._replace(pDOP= pos_dop * 0.01)
-        nav_payload._replace(tDOP= time_dop * 0.01)
-        nav_payload._replace(vDOP= vert_dop * 0.01)
-        nav_payload._replace(hDOP= horiz_dop * 0.01)
-        nav_payload._replace(nDOP= north_dop * 0.01)
-        nav_payload._replace(eDOP= east_dop * 0.01)
+        nav_payload = nav_payload._replace(gDOP= geo_dop * 0.01)
+        nav_payload = nav_payload._replace(pDOP= pos_dop * 0.01)
+        nav_payload = nav_payload._replace(tDOP= time_dop * 0.01)
+        nav_payload = nav_payload._replace(vDOP= vert_dop * 0.01)
+        nav_payload = nav_payload._replace(hDOP= horiz_dop * 0.01)
+        nav_payload = nav_payload._replace(nDOP= north_dop * 0.01)
+        nav_payload = nav_payload._replace(eDOP= east_dop * 0.01)
+
+        return nav_payload
+
+    def scale_NAV_EELL(self, nav_payload):
 
         err_ellipse = nav_payload.errEllipseOrient
+        nav_payload = nav_payload._replace(errEllipseOrient= err_ellipse * (10**-2))
 
-        nav_payload._replace(errEllipseOrient= err_ellipse * math.exp(-2))
+        return nav_payload
 
-        ecef_x_hp = nav_payload.ecefX
-        ecef_y_hp = nav_payload.ecefY
-        ecef_z_hp = nav_payload.ecefZ
+    def scale_NAV_HPPOSECEF(self, nav_payload):
+
+        ecef_x_hp = nav_payload.ecefXHp
+        ecef_y_hp = nav_payload.ecefYHp
+        ecef_z_hp = nav_payload.ecefZHp
         pos_acc = nav_payload.pAcc
 
-        nav_payload._replace(ecefX=ecef_x_hp * 0.1)
-        nav_payload._replace(ecefY=ecef_y_hp * 0.1)
-        nav_payload._replace(ecefZ=ecef_z_hp * 0.1)
-        nav_payload._replace(pAcc=pos_acc * 0.1)
+        nav_payload = nav_payload._replace(ecefX=ecef_x_hp * 0.1)
+        nav_payload = nav_payload._replace(ecefY=ecef_y_hp * 0.1)
+        nav_payload = nav_payload._replace(ecefZ=ecef_z_hp * 0.1)
+        nav_payload = nav_payload._replace(pAcc=pos_acc * 0.1)
+    
+        return nav_payload
+
+    def scale_NAV_HPPOSLLH(self, nav_payload):
 
         longitude = nav_payload.lon
         lon_Hp = nav_payload.lonHp
@@ -569,54 +582,80 @@ class UbloxGps(object):
         horiz_acc = nav_payload.hAcc
         vert_acc = nav_payload.vAcc
 
-        nav_payload._replace(lon=longitude * math.exp(-7))
-        nav_payload._replace(lat=latitude * math.exp(-7))
-        nav_payload._replace(lonHp=lon_Hp * math.exp(-9))
-        nav_payload._replace(latHp=lat_Hp * math.exp(-9))
-        nav_payload._replace(heightHp=height_Hp * 0.1)
-        nav_payload._replace(height_sea=hMSLHp * 0.1)
-        nav_payload._replace(hAcc=horiz_acc * 0.1)
-        nav_payload._replace(vAcc=vert_acc * 0.1)
+        nav_payload = nav_payload._replace(lon=longitude * (10**-7))
+        nav_payload = nav_payload._replace(lat=latitude * (10**-7))
+        nav_payload = nav_payload._replace(lonHp=lon_Hp * (10**-9))
+        nav_payload = nav_payload._replace(latHp=lat_Hp * (10**-9))
+        nav_payload = nav_payload._replace(heightHp=height_Hp * 0.1)
+        nav_payload = nav_payload._replace(height_sea=hMSLHp * 0.1)
+        nav_payload = nav_payload._replace(hAcc=horiz_acc * 0.1)
+        nav_payload = nav_payload._replace(vAcc=vert_acc * 0.1)
 
-        pvt_head_acc = nav_payload.headAcc
-        pvt_head_veh = nav_payload.headVeh
-        pvt_mag_dec = nav_payload.magDec
-        pvt_mag_acc = nav_payload.magAcc
+        return nav_payload
 
-        nav_payload._replace(headAcc = pvt_head_acc * math.exp(-5))
-        nav_payload._replace(headVeh = pvt_head_veh * math.exp(-5))
-        nav_payload._replace(magDec = pvt_head_dec * math.exp(-2))
-        nav_payload._replace(magAcc = pvt_head_acc * math.exp(-2))
+    def scale_NAV_PVT(self, nav_payload):
+
+        longitude = nav_payload.lon
+        latitude = nav_payload.lat
+        head_mot = nav_payload.headMot
+        head_acc = nav_payload.headAcc
+        pos_dop = nav_payload.pDOP
+        head_veh = nav_payload.headVeh
+        mag_dec = nav_payload.magDec
+        mag_acc = nav_payload.magAcc
+
+        nav_payload = nav_payload._replace(lon=longitude *(10**-7))
+        nav_payload = nav_payload._replace(lat=latitude * (10**-7))
+        nav_payload = nav_payload._replace(headMot = head_mot * (10**-5))
+        nav_payload = nav_payload._replace(headAcc = head_acc * (10**-5))
+        nav_payload = nav_payload._replace(pDOP= pos_dop * 0.01)
+        nav_payload = nav_payload._replace(headVeh = head_veh * (10**-5))
+        nav_payload = nav_payload._replace(magDec = mag_dec * (10**-2))
+        nav_payload = nav_payload._replace(magAcc = mag_acc * (10**-2))
+
+        return nav_payload
+
+    def scale_NAV_RELPOSNED(self, nav_payload):
 
         rel_pos_head = nav_payload.relPosHeading
         rel_pos_hpn = nav_payload.relPosHPN
         rel_pos_hpe = nav_payload.relPosHPE
         rel_pos_hpd = nav_payload.relPosHPD
         rel_pos_hpl = nav_payload.relPosHPLength
+
         acc_N = nav_payload.accN
         acc_E = nav_payload.accE
         acc_D = nav_payload.accD
         acc_L = nav_payload.accLength
         acc_H = nav_payload.accHeading
 
-        nav_payload._replace(relPosHeading = rel_pos_head * math.exp(-5))
-        nav_payload._replace(relPosHPN = rel_pos_hpn * 0.1)
-        nav_payload._replace(relPosHPE = rel_pos_hpe * 0.1)
-        nav_payload._replace(relPosHPD = rel_pos_hpd * 0.1)
-        nav_payload._replace(relPosHPLength = rel_pos_hpl * 0.1)
-        nav_payload._replace(accN = acc_N * 0.1)
-        nav_payload._replace(accE = acc_E * 0.1)
-        nav_payload._replace(accD = acc_D * 0.1)
-        nav_payload._replace(accLength = acc_L * 0.1)
-        nav_payload._replace(accHeading = acc_H * math.exp(-5)) 
+        nav_payload = nav_payload._replace(relPosHeading = rel_pos_head * (10**-5))
+        nav_payload = nav_payload._replace(relPosHPN = rel_pos_hpn * 0.1)
+        nav_payload = nav_payload._replace(relPosHPE = rel_pos_hpe * 0.1)
+        nav_payload = nav_payload._replace(relPosHPD = rel_pos_hpd * 0.1)
+        nav_payload = nav_payload._replace(relPosHPLength = rel_pos_hpl * 0.1)
+        nav_payload = nav_payload._replace(accN = acc_N * 0.1)
+        nav_payload = nav_payload._replace(accE = acc_E * 0.1)
+        nav_payload = nav_payload._replace(accD = acc_D * 0.1)
+        nav_payload = nav_payload._replace(accLength = acc_L * 0.1)
+        nav_payload = nav_payload._replace(accHeading = acc_H * (10**-5)) 
 
+        return nav_payload
+
+    def scale_NAV_SAT(self, nav_payload):
+        
         pr_res = nav_payload.prRes
+        nav_payload = nav_payload._replace(prRes= pr_res * 0.1)
+    
+        return nav_payload
 
-        nav_payload._replace(prRes= pr_res * 0.1)
+    def scale_NAV_VALNED(self, nav_payload):
 
         velned_course_acc = nav_payload.cAcc
+        att_head = nav_payload.heading
 
-        nav_payload._replace(cAcc * math.exp(-5))
+        nav_payload = nav_payload._replace(cAcc * (10**-5))
+        nav_payload = nav_payload._replace(heading= att_head * (10**-5))
 
         return nav_payload
     
