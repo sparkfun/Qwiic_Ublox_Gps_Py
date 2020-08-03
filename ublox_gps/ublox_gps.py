@@ -47,8 +47,9 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
-from ubxtranslator import core
+from math import exp
 
+import core
 import serial
 import spidev
 import struct
@@ -72,7 +73,7 @@ class UbloxGps(object):
         if hard_port is None: 
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
         elif type(hard_port) == spidev.SpiDev:
-            sfeSpi = sfe_spi_wrapper(hard_port)
+            sfeSpi = sfeSpiWrapper(hard_port)
             self.hard_port = sfeSpi
         else: 
             self.hard_port = hard_port
@@ -509,13 +510,117 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port) 
         return(msg)
+
+    def scale_NAV_tuple(self, nav_payload): 
+
+        att_roll = nav_payload.roll
+        att_pitch = nav_payload.pitch
+        att_head = nav_payload.heading
+        att_roll_acc = nav_payload.accPitch
+        att_head_acc = nav_payload.accHeading
+
+        nav_payload._replace(roll= att_roll*math.exp(-5))
+        nav_payload._replace(pitch= att_pitch*math.exp(-5))
+        nav_payload._replace(heading= att_head*math.exp(-5))
+        nav_payload._replace(accPitch= att_roll_acc*math.exp(-5))
+        nav_payload._replace(accHeading= att_head_acc*math.exp(-5))
+
+        geo_dop = nav_payload.gDOP
+        pos_dop = nav_payload.pDOP
+        time_dop = nav_payload.tDOP
+        vert_dop = nav_payload.vDOP
+        horiz_dop = nav_payload.hDOP
+        north_dop = nav_payload.nDOP
+        east_dop = nav_payload.eDOP
+
+        nav_payload._replace(gDOP= geo_dop * 0.01)
+        nav_payload._replace(pDOP= pos_dop * 0.01)
+        nav_payload._replace(tDOP= time_dop * 0.01)
+        nav_payload._replace(vDOP= vert_dop * 0.01)
+        nav_payload._replace(hDOP= horiz_dop * 0.01)
+        nav_payload._replace(nDOP= north_dop * 0.01)
+        nav_payload._replace(eDOP= east_dop * 0.01)
+
+        err_ellipse = nav_payload.errEllipseOrient
+
+        nav_payload._replace(errEllipseOrient= err_ellipse * math.exp(-2))
+
+        ecef_x_hp = nav_payload.ecefX
+        ecef_y_hp = nav_payload.ecefY
+        ecef_z_hp = nav_payload.ecefZ
+        pos_acc = nav_payload.pAcc
+
+        nav_payload._replace(ecefX=ecef_x_hp * 0.1)
+        nav_payload._replace(ecefY=ecef_y_hp * 0.1)
+        nav_payload._replace(ecefZ=ecef_z_hp * 0.1)
+        nav_payload._replace(pAcc=pos_acc * 0.1)
+
+        longitude = nav_payload.lon
+        lon_Hp = nav_payload.lonHp
+        latitude = nav_payload.lat
+        lat_Hp = nav_payload.latHp
+        height_Hp = nav_payload.heightHp
+        height_sea = nav_payload.hMSLHp
+        horiz_acc = nav_payload.hAcc
+        vert_acc = nav_payload.vAcc
+
+        nav_payload._replace(lon=longitude * math.exp(-7))
+        nav_payload._replace(lat=latitude * math.exp(-7))
+        nav_payload._replace(lonHp=lon_Hp * math.exp(-9))
+        nav_payload._replace(latHp=lat_Hp * math.exp(-9))
+        nav_payload._replace(heightHp=height_Hp * 0.1)
+        nav_payload._replace(height_sea=hMSLHp * 0.1)
+        nav_payload._replace(hAcc=horiz_acc * 0.1)
+        nav_payload._replace(vAcc=vert_acc * 0.1)
+
+        pvt_head_acc = nav_payload.headAcc
+        pvt_head_veh = nav_payload.headVeh
+        pvt_mag_dec = nav_payload.magDec
+        pvt_mag_acc = nav_payload.magAcc
+
+        nav_payload._replace(headAcc = pvt_head_acc * math.exp(-5))
+        nav_payload._replace(headVeh = pvt_head_veh * math.exp(-5))
+        nav_payload._replace(magDec = pvt_head_dec * math.exp(-2))
+        nav_payload._replace(magAcc = pvt_head_acc * math.exp(-2))
+
+        rel_pos_head = nav_payload.relPosHeading
+        rel_pos_hpn = nav_payload.relPosHPN
+        rel_pos_hpe = nav_payload.relPosHPE
+        rel_pos_hpd = nav_payload.relPosHPD
+        rel_pos_hpl = nav_payload.relPosHPLength
+        acc_N = nav_payload.accN
+        acc_E = nav_payload.accE
+        acc_D = nav_payload.accD
+        acc_L = nav_payload.accLength
+        acc_H = nav_payload.accHeading
+
+        nav_payload._replace(relPosHeading = rel_pos_head * math.exp(-5))
+        nav_payload._replace(relPosHPN = rel_pos_hpn * 0.1)
+        nav_payload._replace(relPosHPE = rel_pos_hpe * 0.1)
+        nav_payload._replace(relPosHPD = rel_pos_hpd * 0.1)
+        nav_payload._replace(relPosHPLength = rel_pos_hpl * 0.1)
+        nav_payload._replace(accN = acc_N * 0.1)
+        nav_payload._replace(accE = acc_E * 0.1)
+        nav_payload._replace(accD = acc_D * 0.1)
+        nav_payload._replace(accLength = acc_L * 0.1)
+        nav_payload._replace(accHeading = acc_H * math.exp(-5)) 
+
+        pr_res = nav_payload.prRes
+
+        nav_payload._replace(prRes= pr_res * 0.1)
+
+        velned_course_acc = nav_payload.cAcc
+
+        nav_payload._replace(cAcc * math.exp(-5))
+
+        return nav_payload
     
 
 
 
-class sfe_spi_wrapper(object):
+class sfeSpiWrapper(object):
     """
-    sfe_spi_wrapper
+    sfeSpiWrapper
 
     Initialize the library with the given port. 
 
@@ -524,7 +629,7 @@ class sfe_spi_wrapper(object):
                         takes a spi port and then sets it to the ublox module's
                         specifications.
     
-    :return:            The sfe_spi_wrapper object.
+    :return:            The sfeSpiWrapper object.
     :rtype:             Object
     """
 
