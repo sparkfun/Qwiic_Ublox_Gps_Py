@@ -47,12 +47,12 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
-from ubxtranslator import core
+from . import core
 
 import serial
 import spidev
 import struct
-import sparkfun_predefines as sp
+from . import sparkfun_predefines as sp
 
 class UbloxGps(object):
     """

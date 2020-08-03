@@ -40,7 +40,7 @@
 
 import spidev
 
-from ublox_gps import UbloxGps
+from qwiic_ublox_gps.ublox_gps import UbloxGps
 
 port = spidev.SpiDev()
 gps = UbloxGps(port)
@@ -55,7 +55,7 @@ def run():
                 print("Longitude: ", geo.lon) 
                 print("Latitude: ", geo.lat)
                 print("Heading of Motion: ", geo.headMot)
-            except (ValueError, IOError) as err:
+            except (ValueError, IOError, AttributeError) as err:
                 print(err)
 
     finally:

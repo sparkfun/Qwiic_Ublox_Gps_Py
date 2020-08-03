@@ -40,7 +40,7 @@
 
 import serial
 
-from ublox_gps import UbloxGps
+from qwiic_ublox_gps.ublox_gps import UbloxGps
 
 port = serial.Serial('/dev/serial0', baudrate=38400, timeout=1)
 gps = UbloxGps(port)
@@ -54,7 +54,7 @@ def run():
                 # Get NMEA Protocol Version
                 get_set = gps.ubx_get_set_del(0x20930001)
                 print(get_set)
-            except (ValueError, IOError) as err:
+            except (ValueError, IOError, AttributeError) as err:
                 print(err)
 
     finally:
