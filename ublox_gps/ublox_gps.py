@@ -515,6 +515,13 @@ class UbloxGps(object):
         return(msg)
 
     def scale_NAV_ATT(self, nav_payload):
+        """
+        This takes the UBX-NAV-ATT payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         att_roll = nav_payload.roll
         att_pitch = nav_payload.pitch
@@ -531,6 +538,13 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_DOP(self, nav_payload):
+        """
+        This takes the UBX-NAV-DOP payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         geo_dop = nav_payload.gDOP
         pos_dop = nav_payload.pDOP
@@ -551,14 +565,26 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_EELL(self, nav_payload):
-
+        """
+        This takes the UBX-NAV-EELL payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
         err_ellipse = nav_payload.errEllipseOrient
         nav_payload = nav_payload._replace(errEllipseOrient= err_ellipse * (10**-2))
 
         return nav_payload
 
     def scale_NAV_HPPOSECEF(self, nav_payload):
-
+        """
+        This takes the UBX-NAV-HPPOSECEF payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
         ecef_x_hp = nav_payload.ecefXHp
         ecef_y_hp = nav_payload.ecefYHp
         ecef_z_hp = nav_payload.ecefZHp
@@ -572,6 +598,13 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_HPPOSLLH(self, nav_payload):
+        """
+        This takes the UBX-NAV-HPPOSLLH payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         longitude = nav_payload.lon
         lon_Hp = nav_payload.lonHp
@@ -594,6 +627,13 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_PVT(self, nav_payload):
+        """
+        This takes the UBX-NAV-PVT payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         longitude = nav_payload.lon
         latitude = nav_payload.lat
@@ -616,6 +656,13 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_RELPOSNED(self, nav_payload):
+        """
+        This takes the UBX-NAV-RELPOSNED payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         rel_pos_head = nav_payload.relPosHeading
         rel_pos_hpn = nav_payload.relPosHPN
@@ -643,13 +690,26 @@ class UbloxGps(object):
         return nav_payload
 
     def scale_NAV_SAT(self, nav_payload):
+        """
+        This takes the UBX-NAV-SAT payload and scales the relevant fields
+        as it's described in the datasheet. 
         
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
         pr_res = nav_payload.prRes
         nav_payload = nav_payload._replace(prRes= pr_res * 0.1)
     
         return nav_payload
 
     def scale_NAV_VALNED(self, nav_payload):
+        """
+        This takes the UBX-NAV-VALNED payload and scales the relevant fields
+        as it's described in the datasheet. 
+        
+        :return: Scaled verasion of the given payload. 
+        :rtype: namedtuple
+        """
 
         velned_course_acc = nav_payload.cAcc
         att_head = nav_payload.heading
