@@ -47,38 +47,39 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
-import core
+import struct
 import serial
 import spidev
-import struct
-import sparkfun_predefines as sp
+
+from . import sparkfun_predefines as sp
+from . import core
 
 class UbloxGps(object):
     """
     UbloxGps
 
-    Initialize the library with the given port. 
+    Initialize the library with the given port.
 
     :param hard_port:   The port to use to communicate with the module, this
                         can be a serial or SPI port. If no port is given, then the library
-                        assumes serial at a 38400 baud rate. 
-        
+                        assumes serial at a 38400 baud rate.
+
     :return:            The UbloxGps object.
     :rtype:             Object
     """
 
     def __init__(self, hard_port = None):
-        if hard_port is None: 
+        if hard_port is None:
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
         elif type(hard_port) == spidev.SpiDev:
             sfeSpi = sfeSpiWrapper(hard_port)
             self.hard_port = sfeSpi
-        else: 
+        else:
             self.hard_port = hard_port
 
         # Class message values
         self.ack_ms= {
-            'ACK':0x01, 'NAK':0x00 
+            'ACK':0x01, 'NAK':0x00
         }
         self.cfg_ms= {
             'OTP':0x41,    'PIO':0x2c,      'PRT':0x00,     'PT2':0x59,     'RST':0x04,
@@ -112,12 +113,12 @@ class UbloxGps(object):
             'SBAS':0x32,       'SIG':0x43,       'STATUS':0x03,     'TIMBDS':0x24,
             'TIMEGAL':0x25,    'TIMEGLO':0x23,   'TIMEGPS':0x20,    'TIMELS':0x25,
             'TIMEQZSS':0x27,   'TIMEUTC':0x21,   'VELECEF':0x11,    'VELNED':0x12
-        } 
+        }
         self.time_ms= {
             'TM2':0x03, 'TP':0x01, 'VRFY':0x06
         }
 
-    def send_message(self, ubx_class, ubx_id, ubx_payload = None): 
+    def send_message(self, ubx_class, ubx_id, ubx_payload = None):
         """
         Sends a ublox message to the ublox module.
 
@@ -142,21 +143,21 @@ class UbloxGps(object):
             payload_length = len(ubx_payload)
         else:
             payload_length = len(ubx_payload)
-        
+
         if payload_length > 0:
-            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
-                                  ubx_class.id_, ubx_id, (payload_length & 0xFF), 
+            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2,
+                                  ubx_class.id_, ubx_id, (payload_length & 0xFF),
                                   (payload_length >> 8)) + ubx_payload
 
-        else: 
-            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2, 
-                                  ubx_class.id_, ubx_id, (payload_length & 0xFF), 
-                                  (payload_length >> 8)) 
+        else:
+            message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2,
+                                  ubx_class.id_, ubx_id, (payload_length & 0xFF),
+                                  (payload_length >> 8))
 
         checksum = core.Parser._generate_fletcher_checksum(message[2:])
 
         self.hard_port.write(message + checksum)
-        
+
         return True
 
     def ubx_get_val(self, key_id):
@@ -165,135 +166,135 @@ class UbloxGps(object):
         which are then cocantenated together. This payload is then sent along
         with the CFG Class and VALGET Message ID to send_message(). Ublox
         Messages are then parsed for the requested values or a NAK signifying a
-        problem. 
+        problem.
 
         :return: The requested payload or a NAK on failure.
         :rtype: namedtuple
         """
         key_id_bytes = bytes([])
         if type(key_id) != bytes:
-            while key_id > 0: 
+            while key_id > 0:
                 key_id_bytes = key_id_bytes + bytes([(key_id & 0xFF)])
-                key_id = key_id >> 8 
-                
+                key_id = key_id >> 8
+
         key_id_bytes = key_id_bytes[::-1]
         msg = self.send_message(sp.CFG_CLS, self.cfg_ms.get('VALGET'), key_id_bytes)
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def enable_UART1(self, enable):
-        if enable is True: 
+        if enable is True:
             self.send_message(sp.CFG_CLS, self.cfg_ms.get('RST'), 0x00)
 
         parse_tool = core.Parser([sp.CFG_CLS, sp.ACK_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def geo_coords(self):
         """
-        Sends a poll request for the NAV class with the PVT Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the NAV class with the PVT Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the NAV Class and PVT Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_PVT(payload) 
-        return(s_payload)
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_NAV_PVT(payload)
+        return s_payload
 
     def hp_geo_coords(self):
         """
-        Sends a poll request for the NAV class with the HPPOSLLH Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the NAV class with the HPPOSLLH Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the NAV Class and HPPOSLLH Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.NAV_CLS, self.nav_ms.get('HPPOSLLH'))
         parse_tool = core.Parser([sp.NAV_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_HPPOSLLH(payload) 
-        return(s_payload)
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_NAV_HPPOSLLH(payload)
+        return s_payload
 
     def date_time(self):
         """
-        Sends a poll request for the NAV class with the PVT Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the NAV class with the PVT Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the NAV Class and PVT Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.NAV_CLS, self.nav_ms.get('PVT'))
         parse_tool = core.Parser([sp.NAV_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_PVT(payload) 
-        return(s_payload)
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_NAV_PVT(payload)
+        return s_payload
 
     def satellites(self):
         """
-        Sends a poll request for the NAV class with the SAT Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the NAV class with the SAT Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the NAV Class and SAT Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.NAV_CLS, self.nav_ms.get('SAT'))
         parse_tool = core.Parser([sp.NAV_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_SAT(payload) 
-        return(s_payload)
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_NAV_SAT(payload)
+        return s_payload
 
     def veh_attitude(self):
         """
-        Sends a poll request for the NAV class with the ATT Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the NAV class with the ATT Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the NAV Class and ATT Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.NAV_CLS, self.nav_ms.get('ATT'))
         parse_tool = core.Parser([sp.NAV_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        s_payload = self.scale_NAV_ATT(payload) 
-        return(s_payload)
-    
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_NAV_ATT(payload)
+        return s_payload
+
     def stream_nmea(self):
         """
         Reads directly from the module's data stream, by default this is NMEA
-        data. 
+        data.
 
         :return: Returns NMEA data.
         :rtype: string
         """
-        return(self.hard_port.readline().decode('utf-8'))
+        return self.hard_port.readline().decode('utf-8')
 
     def imu_alignment(self):
         """
-        Sends a poll request for the ESF class with the ALG Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the ALG Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and ALG Message ID
         :rtype: namedtuple
         """
         self.send_message(sp.ESF_CLS, self.esf_ms.get('ALG'))
         parse_tool = core.Parser([sp.ESF_CLS])
-        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port) 
-        return(payload)
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        return payload
 
     def vehicle_dynamics(self):
         """
-        Sends a poll request for the ESF class with the INS Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the INS Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and INS Message ID
         :rtype: namedtuple
@@ -301,13 +302,13 @@ class UbloxGps(object):
         self.send_message(sp.ESF_CLS, 0x15)
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
-        return(payload)
+        return payload
 
     def esf_measures(self):
         """
-        Sends a poll request for the ESF class with the MEAS Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the MEAS Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and MEAS Message ID
         :rtype: namedtuple
@@ -315,13 +316,13 @@ class UbloxGps(object):
         self.send_message(sp.ESF_CLS, self.esf_ms.get('MEAS'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
-        return(payload)
+        return payload
 
     def esf_raw_measures(self):
         """
-        Sends a poll request for the ESF class with the RAW Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the RAW Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and RAW Message ID
         :rtype: namedtuple
@@ -329,13 +330,13 @@ class UbloxGps(object):
         self.send_message(sp.ESF_CLS, self.esf_ms.get('RAW'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
-        return(payload)
+        return payload
 
     def reset_imu_align(self):
         """
-        Sends a poll request for the ESF class with the RESETALG Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the RESETALG Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and RESETALG Message ID
         :rtype: namedtuple
@@ -343,13 +344,13 @@ class UbloxGps(object):
         self.send_message(sp.ESF_CLS, self.esf_ms.get('RESETALG'))
         parse_tool = core.Parser([sp.ACK_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
-        return(payload)
+        return payload
 
     def esf_status(self):
         """
-        Sends a poll request for the ESF class with the STATUS Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the ESF class with the STATUS Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and STATUS Message ID
         :rtype: namedtuple
@@ -357,169 +358,169 @@ class UbloxGps(object):
         self.send_message(sp.ESF_CLS, self.esf_ms.get('STATUS'))
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
-        return(payload)
-    
+        return payload
+
     def port_settings(self):
         """
-        Sends a poll request for the MON class with the COMMS Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the COMMS Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and COMMS Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('COMMS'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def module_gnss_support(self):
         """
-        Sends a poll request for the MON class with the GNSS Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the GNSS Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and GNSS Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('GNSS'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def pin_settings(self):
         """
-        Sends a poll request for the MON class with the HW3 Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the HW3 Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and HW3 Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('HW3'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def installed_patches(self):
         """
-        Sends a poll request for the MON class with the PATCH Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the PATCH Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and HW3 Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('HW3'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def prod_test_pio(self):
         """
-        Sends a poll request for the MON class with the PIO Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the PIO Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and PIO Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('PIO'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def prod_test_monitor(self):
         """
-        Sends a poll request for the MON class with the PT2 Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the PT2 Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and PT2 Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('PT2'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def rf_ant_status(self):
         """
-        Sends a poll request for the MON class with the RF Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the RF Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the ESF Class and RF Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.esf_ms.get('RF'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
 
     def module_wake_state(self):
         """
-        Sends a poll request for the MON class with the RXR Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the RXR Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the MON Class and RXR Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.mon_ms.get('RXR'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def sensor_production_test(self):
         """
-        Sends a poll request for the MON class with the SPT Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the SPT Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the MON Class and SPT Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.mon_ms.get('SPT'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def temp_val_state(self):
         """
-        Sends a poll request for the MON class with the TEMP Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the TEMP Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the MON Class and TEMP Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.mon_ms.get('TEMP'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def module_software_version(self):
         """
-        Sends a poll request for the MON class with the VER Message ID and 
-        parses ublox messages for the response. The payload is extracted from 
-        the response which is then passed to the user. 
+        Sends a poll request for the MON class with the VER Message ID and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
 
         :return: The payload of the MON Class and VER Message ID
         :rtype: namedtuple
         """
         msg = self.send_message(sp.MON_CLS, self.mon_ms.get('VER'))
         parse_tool = core.Parser([sp.MON_CLS])
-        msg = parse_tool.receive_from(self.hard_port) 
-        return(msg)
+        msg = parse_tool.receive_from(self.hard_port)
+        return msg
 
     def scale_NAV_ATT(self, nav_payload):
         """
         This takes the UBX-NAV-ATT payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -540,9 +541,9 @@ class UbloxGps(object):
     def scale_NAV_DOP(self, nav_payload):
         """
         This takes the UBX-NAV-DOP payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -567,9 +568,9 @@ class UbloxGps(object):
     def scale_NAV_EELL(self, nav_payload):
         """
         This takes the UBX-NAV-EELL payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
         err_ellipse = nav_payload.errEllipseOrient
@@ -580,9 +581,9 @@ class UbloxGps(object):
     def scale_NAV_HPPOSECEF(self, nav_payload):
         """
         This takes the UBX-NAV-HPPOSECEF payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
         ecef_x_hp = nav_payload.ecefXHp
@@ -594,15 +595,15 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(ecefY=ecef_y_hp * 0.1)
         nav_payload = nav_payload._replace(ecefZ=ecef_z_hp * 0.1)
         nav_payload = nav_payload._replace(pAcc=pos_acc * 0.1)
-    
+
         return nav_payload
 
     def scale_NAV_HPPOSLLH(self, nav_payload):
         """
         This takes the UBX-NAV-HPPOSLLH payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -629,9 +630,9 @@ class UbloxGps(object):
     def scale_NAV_PVT(self, nav_payload):
         """
         This takes the UBX-NAV-PVT payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -658,9 +659,9 @@ class UbloxGps(object):
     def scale_NAV_RELPOSNED(self, nav_payload):
         """
         This takes the UBX-NAV-RELPOSNED payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -685,29 +686,29 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(accE = acc_E * 0.1)
         nav_payload = nav_payload._replace(accD = acc_D * 0.1)
         nav_payload = nav_payload._replace(accLength = acc_L * 0.1)
-        nav_payload = nav_payload._replace(accHeading = acc_H * (10**-5)) 
+        nav_payload = nav_payload._replace(accHeading = acc_H * (10**-5))
 
         return nav_payload
 
     def scale_NAV_SAT(self, nav_payload):
         """
         This takes the UBX-NAV-SAT payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
         pr_res = nav_payload.prRes
         nav_payload = nav_payload._replace(prRes= pr_res * 0.1)
-    
+
         return nav_payload
 
     def scale_NAV_VALNED(self, nav_payload):
         """
         This takes the UBX-NAV-VALNED payload and scales the relevant fields
-        as it's described in the datasheet. 
-        
-        :return: Scaled verasion of the given payload. 
+        as it's described in the datasheet.
+
+        :return: Scaled verasion of the given payload.
         :rtype: namedtuple
         """
 
@@ -718,7 +719,7 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(heading= att_head * (10**-5))
 
         return nav_payload
-    
+
 
 
 
@@ -726,13 +727,13 @@ class sfeSpiWrapper(object):
     """
     sfeSpiWrapper
 
-    Initialize the library with the given port. 
+    Initialize the library with the given port.
 
     :param spi_port:    This library simply provides some ducktyping for spi so
                         that the ubxtranslator library doesn't complain. It
                         takes a spi port and then sets it to the ublox module's
                         specifications.
-    
+
     :return:            The sfeSpiWrapper object.
     :rtype:             Object
     """
@@ -747,8 +748,8 @@ class sfeSpiWrapper(object):
         self.spi_port.open(0,0)
         self.spi_port.max_speed_hz = 5500 #Hz
         self.spi_port.mode = 0b00
-        
-    def read(self, read_data = 1): 
+
+    def read(self, read_data = 1):
         """
         Reads a byte or bytes of data from the SPI port. The bytes are
         converted to a bytes object before being returned.
@@ -759,13 +760,13 @@ class sfeSpiWrapper(object):
 
         data = self.spi_port.readbytes(read_data)
         byte_data = bytes([])
-        for d in data: 
+        for d in data:
             byte_data = byte_data + bytes([d])
         return byte_data
 
     def write(self, data):
         """
-        Writes a byte or bytes of data to the SPI port. 
+        Writes a byte or bytes of data to the SPI port.
 
         :return: True on completion
         :rtype: boolean
@@ -773,5 +774,5 @@ class sfeSpiWrapper(object):
         self.spi_port.xfer2(list(data))
 
         return True
-            
-            
+
+
