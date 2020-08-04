@@ -7,9 +7,9 @@ Qwiic_Ublox_Gps_Py
 </p>
 <p align="center">
 	<a href="https://pypi.org/project/sparkfun-qwiic-ublox-gps/" alt="Package">
-		<img src="https://img.shields.io/pypi/pyversions/sparkfun_qwiic_pca9685.svg" /></a>
+		<img src="https://img.shields.io/pypi/pyversions/sparkfun_ublox_gps_py.svg" /></a>
 	<a href="https://github.com/sparkfun/Qwiic_Ublox_Gps_Py/issues" alt="Issues">
-		<img src="https://img.shields.io/github/issues/sparkfun/Qwiic_PCA9685_Py.svg" /></a>
+		<img src="https://img.shields.io/github/issues/sparkfun/Qwiic_Ublox_Gps_Py.svg" /></a>
 	<a href="https://qwiic-pca9685-py.readthedocs.io/en/latest/?" alt="Documentation">
 		<img src="https://readthedocs.org/projects/qwiic-pca9685-py/badge/?version=latest&style=flat" /></a>
 	<a href="https://github.com/sparkfun/Qwiic_PCA9685_Py/blob/master/LICENSE" alt="License">
