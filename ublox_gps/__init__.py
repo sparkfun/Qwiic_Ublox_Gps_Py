@@ -55,4 +55,5 @@ This python package is a port of the existing [SparkFun Ublox Arduino
 Library](https://github.com/sparkfun/SparkFun_Ublox_Arduino_Library).
 """
 
-from .ublox_gps     import UbloxGps
+from .ublox_gps import UbloxGps
+import core
