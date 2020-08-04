@@ -10,8 +10,8 @@ Qwiic_Ublox_Gps_Py
 		<img src="https://img.shields.io/pypi/pyversions/sparkfun_ublox_gps_py.svg" /></a>
 	<a href="https://github.com/sparkfun/Qwiic_Ublox_Gps_Py/issues" alt="Issues">
 		<img src="https://img.shields.io/github/issues/sparkfun/Qwiic_Ublox_Gps_Py.svg" /></a>
-	<a href="https://qwiic-pca9685-py.readthedocs.io/en/latest/?" alt="Documentation">
-		<img src="https://readthedocs.org/projects/qwiic-pca9685-py/badge/?version=latest&style=flat" /></a>
+	<a href="https://qwiic-ublox-gps-py.readthedocs.io/en/latest/index.html" alt="Documentation">
+		<img src="https://readthedocs.org/projects/qwiic-ublox-gps-py/badge/?version=latest&style=flat" /></a>
 	<a href="https://github.com/sparkfun/Qwiic_PCA9685_Py/blob/master/LICENSE" alt="License">
 		<img src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
 	<a href="https://twitter.com/intent/follow?screen_name=sparkfun">
@@ -63,13 +63,10 @@ The u-blox gps Python package currently supports the following platforms:
 * [Google Coral Development Board](https://www.sparkfun.com/products/15318)
 -->
 
-Dependencies 
----------------
-This package depends on the [ubxtranslator library](https://github.com/dalymople/ubxtranslator/tree/master/ubxtranslator).
 
 Documentation
 -------------
-The SparkFun u-blox gps module documentation is hosted at [ReadTheDocs](https://readthedocs.io/)
+The SparkFun u-blox gps module documentation is hosted at [ReadTheDocs](https://qwiic-ublox-gps-py.readthedocs.io/en/latest/index.html)
 
 Installation
 -------------
