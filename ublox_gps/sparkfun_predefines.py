@@ -1,6 +1,6 @@
 """Predefined message classes"""
 
-import core
+from . import core
 
 __all__ = ['ACK_CLS', 'CFG_CLS', 'ESF_CLS', 'INF_CLS', 'MGA_CLS', 'MON_CLS',
            'NAV_CLS', 'TIM_CLS', ]
