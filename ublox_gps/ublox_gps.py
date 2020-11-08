@@ -621,7 +621,7 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(lonHp=lon_Hp * (10**-9))
         nav_payload = nav_payload._replace(latHp=lat_Hp * (10**-9))
         nav_payload = nav_payload._replace(heightHp=height_Hp * 0.1)
-        nav_payload = nav_payload._replace(height_sea=hMSLHp * 0.1)
+        nav_payload = nav_payload._replace(hMSLHp=height_sea * 0.1)
         nav_payload = nav_payload._replace(hAcc=horiz_acc * 0.1)
         nav_payload = nav_payload._replace(vAcc=vert_acc * 0.1)
 
