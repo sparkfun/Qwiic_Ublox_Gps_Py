@@ -54,6 +54,8 @@ import spidev
 import threading
 import time
 
+import collections
+
 import sys
 
 from . import sfeSpiWrapper
@@ -73,6 +75,9 @@ class UbloxGps(object):
     :return:            The UbloxGps object.
     :rtype:             Object
     """
+    MAX_NMEA_LINES = 50
+
+
 
     def __init__(self, hard_port = None):
         if hard_port is None:
@@ -83,7 +88,7 @@ class UbloxGps(object):
         else:
             self.hard_port = hard_port
 
-        self.packets = {}
+        self.nmea_line_buffer = collections.deque(maxlen=UbloxGps.MAX_NMEA_LINES)
 
         self.pckt_scl = {
             'lon' : (10**-7),
@@ -138,61 +143,26 @@ class UbloxGps(object):
             'pitch' : (10**-5),
         }
 
-
+        #packet storage
+        self.packets = {}
         # Class message values
-        self.cls_ids = {
-            'CFG' : sp.CFG_CLS,
-            'ACK' : sp.ACK_CLS,
-            'ESF' : sp.ESF_CLS,
-            'INF' : sp.INF_CLS,
-            'MGA' : sp.MGA_CLS,
-            'MON' : sp.MON_CLS,
-            'NAV' : sp.NAV_CLS
-        }
-
         self.cls_ms = {}
+        #class message list for auto-update
+        self.cls_ms_auto = {}
 
-        self.cls_ms['ACK']= {
-            'ACK':0x01, 'NAK':0x00
-        }
-        self.cls_ms['CFG']= {
-            'OTP':0x41,    'PIO':0x2c,      'PRT':0x00,     'PT2':0x59,     'RST':0x04,
-            'SPT':0x64,    'USBTEST':0x58,  'VALDEL':0x8c,  'VALGET':0x8b,
-            'VALSET':0x8a
-        }
-        self.cls_ms['ESF']= {
-            'ALG':0x14,       'INS':0x15,    'MEAS':0x02,  'RAW':0x03,
-            'RESETALG':0x13,  'STATUS':0x10
-        }
-        self.cls_ms['INF']= {
-            'DEBUG':0x04,  'ERROR':0x00,   'NOTICE':0x02,
-            'TEST':0x03,   'WARNING':0x01
-        }
-        self.cls_ms['MGA']= {
-            'ACK':0x60,       'BDS_EPH':0x03,
-            'BDS_ALM':0x03,   'BDS_HEALTH':0x03,      'BDS_UTC':0x03,
-            'DBD_POLL':0x80,  'DBD_IO':0x80,          'GAL_EPH':0x02,
-            'GAL_ALM':0x02,   'GAL_TIMEOFFSET':0x02,  'GAL_UTC':0x02
-        }
-        self.cls_ms['MON']= {
-            'COMMS':0x36,  'GNSS':0x28,  'HW3':0x37,  'PATCH':0x27,
-            'PIO':0x24,    'PT2':0x2b,   'RF':0x38,   'RXR':0x21,
-            'SPT':0x2f
-        }
-        self.cls_ms['NAV']= {
-            'ATT':0x05,        'CLOCK':0x22,     'COV':0x36,
-            'DOP':0x04,        'EELL':0x3d,      'EOE':0x61,        'GEOFENCE':0x39,
-            'HPPOSECEF':0x13,  'HPPOSLLH':0x14,  'ORB':0x34,        'POSECEF':0x01,
-            'POSLLH':0x02,     'PVT':0x07,       'RELPOSNED':0x3c,  'SAT':0x35,
-            'SBAS':0x32,       'SIG':0x43,       'STATUS':0x03,     'TIMBDS':0x24,
-            'TIMEGAL':0x25,    'TIMEGLO':0x23,   'TIMEGPS':0x20,    'TIMELS':0x25,
-            'TIMEQZSS':0x27,   'TIMEUTC':0x21,   'VELECEF':0x11,    'VELNED':0x12
-        }
-        self.cls_ms['TIME']= {
-            'TM2':0x03, 'TP':0x01, 'VRFY':0x06
-        }
+        tmp_all_cls = []
 
-        self.parse_tool = core.Parser(self.cls_ids.values())
+        for (k,v) in vars(sp).items():
+            if isinstance(v, core.Cls):
+                tmp_all_cls.append(v);
+                self.packets[v.name] = {}
+                self.cls_ms_auto[v.name] = []
+                self.cls_ms[v.name] = (v.id_, {})
+
+                for (mk, mv) in v._messages.items():
+                    self.cls_ms[v.name][1][mv.name] = mk
+
+        self.parse_tool = core.Parser(tmp_all_cls)
 
         self.stopping = False
 
@@ -202,33 +172,49 @@ class UbloxGps(object):
 
 
     def set_packet(self, cls_name, msg_name, payload):
-        if not(cls_name in self.packets):
-            self.packets[cls_name] = {}
-
         if (payload is None):
             if msg_name in self.packets[cls_name]:
                 del self.packets[cls_name][msg_name]
         else:
             self.packets[cls_name][msg_name] = payload
 
-    def wait_packet(self, cls_name, msg_name):
-        if not(cls_name in self.packets):
-            self.packets[cls_name] = {}
+    def wait_packet(self, cls_name, msg_name, wait_time):
+        if wait_time < 0 or wait_time is None:
+            wait_time = 0
+
+        orig_tm = time.monotonic()
 
         while (not(msg_name in self.packets[cls_name])):
-            time.sleep(0.1)
+            time.sleep(0.05)
 
-        return self.packets[cls_name][msg_name]
-
-    def run_packet_reader(self):
-        while True:
-            cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port)
-            self.set_packet(cls_name, msg_name, payload)
-
-            if (self.stopping):
+            if ((time.monotonic() - orig_tm) >= wait_time / 1000.0 ):
                 break
 
-            time.sleep(0.1)
+        return self.packets[cls_name][msg_name] if msg_name in self.packets[cls_name] else None
+
+    def run_packet_reader(self):
+        c2 = bytes()
+
+        while True:
+            try:
+                c2 = c2 + self.hard_port.read(1)
+                c2 = c2[-len(core.Parser.PREFIX):]
+
+                if (c2[-1:] == b'$'):
+                    self.nmea_line_buffer.append('$' + core.Parser._read_until(self.hard_port, b'\x0d\x0a').decode('ascii').rstrip(' \r\n'))
+                    c2 = b''
+                elif (c2 == core.Parser.PREFIX):
+                    cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port, True)
+
+                    if not(cls_name is None or msg_name is None or payload is None):
+                        self.set_packet(cls_name, msg_name, payload)
+
+                if (self.stopping):
+                    break
+
+                time.sleep(0.01)
+            except:
+                break
 
     def stop(self):
         self.stopping = True
@@ -240,13 +226,13 @@ class UbloxGps(object):
     def __exit__(self, type, value, tb):
         self.stop()
 
-    def send_message(self, ubx_class, ubx_id, ubx_payload = None):
+    def send_message(self, cls_name, msg_name, ubx_payload = None):
         """
         Sends a ublox message to the ublox module.
 
-        :param ubx_class:   The ublox class with which to send or receive the
+        :param cls_name:   The ublox class with which to send or receive the
                             message to/from.
-        :param ubx_id:      The message id under the ublox class with which
+        :param msg_name:      The message name under the ublox class with which
                             to send or receive the message to/from.
         :param ubx_payload: The payload to send to the class/id specified. If
                             none is given than a "poll request" is
@@ -255,10 +241,16 @@ class UbloxGps(object):
         :rtype: boolean
         """
 
+        ubx_class_id = self.cls_ms[cls_name][0] #convert names to ids
+        ubx_id = self.cls_ms[cls_name][1][msg_name]
+
         SYNC_CHAR1 = 0xB5
         SYNC_CHAR2 = 0x62
 
-        if ubx_payload == b'\x00' or ubx_payload is None:
+        if ubx_payload == b'\x00':
+            ubx_payload = None
+
+        if ubx_payload is None:
             payload_length = 0
         elif type(ubx_payload) is not bytes:
             ubx_payload = bytes([ubx_payload])
@@ -267,7 +259,7 @@ class UbloxGps(object):
             payload_length = len(ubx_payload)
 
         message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2,
-                      ubx_class.id_, ubx_id, (payload_length & 0xFF),
+                      ubx_class_id, ubx_id, (payload_length & 0xFF),
                       (payload_length >> 8))
 
         if payload_length > 0:
@@ -279,7 +271,7 @@ class UbloxGps(object):
 
         return True
 
-    def request_standard_packet(self, ubx_class_id, ubx_id):
+    def request_standard_packet(self, cls_name, msg_name, ubx_payload = None, wait_time = 2500):
         """
         Sends a poll request for the ubx_class_id class with the ubx_id Message ID and
         parses ublox messages for the response. The payload is extracted from
@@ -287,11 +279,17 @@ class UbloxGps(object):
         :return: The payload of the ubx_class_id Class and ubx_id Message ID
         :rtype: namedtuple
         """
-        self.set_packet(ubx_class_id, ubx_id, None)
 
-        self.send_message(self.cls_ids[ubx_class_id], self.cls_ms[ubx_class_id][ubx_id])
+        if ubx_payload == b'\x00':
+            ubx_payload = None
 
-        return self.scale_packet(self.wait_packet(ubx_class_id, ubx_id))
+        if not(msg_name in self.cls_ms_auto[cls_name] and ubx_payload is None):
+            self.set_packet(cls_name, msg_name, None)
+            self.send_message(cls_name, msg_name)
+
+        orig_packet = self.wait_packet(cls_name, msg_name, wait_time);
+
+        return self.scale_packet(orig_packet) if not(orig_packet is None) else None
 
     def scale_packet(self, packet):
         dict_packet= packet._asdict();
@@ -302,23 +300,75 @@ class UbloxGps(object):
         return type(packet)(**dict_packet)
 
 
-    def geo_coords(self):
-        return self.request_standard_packet('NAV', 'PVT')
+    def stream_nmea(self, wait_for_nmea = True):
+        while wait_for_nmea and len(self.nmea_line_buffer) == 0:
+            time.sleep(0.05)
 
-    def hp_geo_coords(self):
-        return self.request_standard_packet('NAV', 'HPPOSLLH')
+        return self.nmea_line_buffer.popleft() if len(self.nmea_line_buffer) > 0 else None
 
-    def satellites(self):
-        return self.request_standard_packet('NAV', 'SAT')
 
-    def veh_attitude(self):
-        return self.request_standard_packet('NAV', 'ATT')
+    def geo_coords(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
-    def port_settings(self):
-        return self.request_standard_packet('MON', 'COMMS')
+    def hp_geo_coords(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'HPPOSLLH', wait_time = wait_time)
 
-    def module_gnss_support(self):
-        return self.request_standard_packet('MON', 'GNSS')
+    def date_time(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
-    def rf_ant_status(self):
-        return self.request_standard_packet('MON', 'RF')
+    def satellites(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'SAT', wait_time = wait_time)
+
+    def veh_attitude(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'ATT', wait_time = wait_time)
+
+    def imu_alignment(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'ALG', wait_time = wait_time)
+
+    def vehicle_dynamics(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'INS', wait_time = wait_time)
+
+    def esf_measures(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'MEAS', wait_time = wait_time)
+
+    def esf_raw_measures(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'RAW', wait_time = wait_time)
+
+    def reset_imu_align(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'RESETALG', wait_time = wait_time)
+
+    def esf_status(self, wait_time = 2500):
+        return self.request_standard_packet('ESF', 'STATUS', wait_time = wait_time)
+
+    def port_settings(self, wait_time = 2500): #doesn't work, seems like class/message configuration was bad (older receiver version?)
+        return self.request_standard_packet('MON', 'COMMS', wait_time = wait_time)#ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+
+    def module_gnss_support(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'GNSS', wait_time = wait_time)
+
+    def pin_settings(self, wait_time = 2500):#doesn't work on F9P
+        return self.request_standard_packet('MON', 'HW3', wait_time = wait_time) #ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+
+    def installed_patches(self, wait_time = 2500):#doesn't work on F9P
+        return self.request_standard_packet('MON', 'PATCH', wait_time = wait_time) #ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+
+    def prod_test_pio(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'PIO', wait_time = wait_time)
+
+    def prod_test_monitor(self, wait_time = 2500):#doesn't work on F9P
+        return self.request_standard_packet('MON', 'PT2', wait_time = wait_time)#ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+
+    def rf_ant_status(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'RF', wait_time = wait_time)
+
+    def module_wake_state(self, wait_time = 2500): #No response on F9P
+        return self.request_standard_packet('MON', 'RXR', wait_time = wait_time)
+
+    def sensor_production_test(self, wait_time = 2500):#No response on F9P
+        return self.request_standard_packet('MON', 'SPT', wait_time = wait_time)
+
+    #def temp_val_state(self, wait_time = 2500):#Doesn't work because TEMP structure is not defined on sparkfun_predefines,
+    #    return self.request_standard_packet('MON', 'TEMP', wait_time = wait_time)#and i honestly don't even see it on official UBLOX doc to fix it
+
+    def module_software_version(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'VER', wait_time = wait_time)
