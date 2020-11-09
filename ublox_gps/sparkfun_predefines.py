@@ -120,7 +120,7 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
         core.Field('layer', 'U1'),
         core.Field('position', 'U2'),
         core.RepeatedBlock('RB', [
-            core.Field('cfgData','U4'),
+            core.Field('cfgData','U1'),
         ]),
     ]),
     core.Message(0x8a, 'VALSET', [ # With Tranaction
@@ -134,7 +134,7 @@ CFG_CLS = core.Cls(0x06, 'CFG', [
         core.Field('action', 'U1'),
         core.PadByte(repeat=1),
         core.RepeatedBlock('RB', [
-            core.Field('cfgData','U4'),
+            core.Field('cfgData','U1'),
         ]),
     ]),
 ])
@@ -454,7 +454,7 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Flag('alloc', 1, 2),
         ]),
         core.PadByte(repeat=0),
-        core.Field('protIds', 'U1'),
+        core.Field('protIds', 'U1', 4),
         core.RepeatedBlock('RB', [
             core.Field('portId','U2'),
             core.Field('txPending','U2'),
@@ -466,8 +466,8 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Field('rxUsage','U1'),
             core.Field('rxPeakUsage','U1'),
             core.Field('overrunErrs','U2'),
-            core.Field('msgs','U2'),
-            core.PadByte(repeat=0),
+            core.Field('msgs','U2', 4),
+            core.PadByte(repeat=7),
             core.Field('skipped', 'U4'),
         ]),
     ]),
@@ -502,8 +502,8 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             core.Flag('safeBoot', 1, 2),
             core.Flag('xtalAbsent', 2, 3),
         ]),
-        core.Field('hwVersion', 'C'),
-        core.PadByte(repeat=0),
+        core.Field('hwVersion', 'S', 10),
+        core.PadByte(repeat=8),
         core.RepeatedBlock('RB', [
             core.Field('pinId', 'U2'),
             core.BitField('pinMask', 'X2', [
@@ -558,8 +558,8 @@ MON_CLS = core.Cls(0x0a, 'MON', [
         core.Field('rtcFreq', 'U4'),
         core.Field('postStatus', 'U4'),
         core.RepeatedBlock('RB', [
-            core.Field('rfPga', 'U1'),
-            core.PadByte(repeat=27), #?
+            #core.Field('rfPga', 'U1'),
+            core.PadByte(repeat=0), #? TODO: FIX this ... if i ever find what it is
         ]),
         #core.RepeatedBlock('RB2', [
         #    core.Field('gnssId', 'U1'),

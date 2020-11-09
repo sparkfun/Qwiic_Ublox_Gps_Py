@@ -57,6 +57,7 @@ import time
 import collections
 
 import sys
+import traceback
 
 from . import sfeSpiWrapper
 from . import sparkfun_predefines as sp
@@ -198,7 +199,7 @@ class UbloxGps(object):
         while True:
             try:
                 c2 = c2 + self.hard_port.read(1)
-                c2 = c2[-len(core.Parser.PREFIX):]
+                c2 = c2[-len(core.Parser.PREFIX):] # keep just 2 bytes, dump the rest
 
                 if (c2[-1:] == b'$'):
                     self.nmea_line_buffer.append('$' + core.Parser._read_until(self.hard_port, b'\x0d\x0a').decode('ascii').rstrip(' \r\n'))
@@ -213,8 +214,17 @@ class UbloxGps(object):
                     break
 
                 time.sleep(0.01)
-            except:
-                break
+
+                self.last_thread_error = None
+            except: # catch *all* exceptions
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+
+                traceback.print_exception(exc_type, exc_value, exc_traceback,limit=2, file=sys.stdout)
+
+                self.last_thread_error = exc_value
+
+                if (self.stopping):
+                    break
 
     def stop(self):
         self.stopping = True
@@ -252,15 +262,19 @@ class UbloxGps(object):
 
         if ubx_payload is None:
             payload_length = 0
-        elif type(ubx_payload) is not bytes:
+        elif isinstance(ubx_payload, list):
+            ubx_payload = bytes(ubx_payload)
+            payload_length = len(ubx_payload)
+        elif not(isinstance(ubx_payload, bytes)):
             ubx_payload = bytes([ubx_payload])
             payload_length = len(ubx_payload)
         else:
             payload_length = len(ubx_payload)
 
-        message = struct.pack('BBBBBB', SYNC_CHAR1, SYNC_CHAR2,
+
+        message = bytes((SYNC_CHAR1, SYNC_CHAR2,
                       ubx_class_id, ubx_id, (payload_length & 0xFF),
-                      (payload_length >> 8))
+                      (payload_length >> 8)))
 
         if payload_length > 0:
              message = message + ubx_payload
@@ -285,7 +299,7 @@ class UbloxGps(object):
 
         if not(msg_name in self.cls_ms_auto[cls_name] and ubx_payload is None):
             self.set_packet(cls_name, msg_name, None)
-            self.send_message(cls_name, msg_name)
+            self.send_message(cls_name, msg_name, ubx_payload)
 
         orig_packet = self.wait_packet(cls_name, msg_name, wait_time);
 
@@ -305,6 +319,35 @@ class UbloxGps(object):
             time.sleep(0.05)
 
         return self.nmea_line_buffer.popleft() if len(self.nmea_line_buffer) > 0 else None
+
+    def ubx_get_val(self, key_id, layer = 7, wait_time = 2500):
+        """
+        This function takes the given key id and breakes it into individual bytes
+        which are then cocantenated together. This payload is then sent along
+        with the CFG Class and VALGET Message ID to send_message(). Ublox
+        Messages are then parsed for the requested values or a NAK signifying a
+        problem.
+        :return: The requested payload or a NAK on failure.
+        :rtype: namedtuple
+        """
+
+        # layer 0 (RAM) and layer 7 (Default)! are the only options
+        if layer != 7:
+            layer = 0
+
+        payloadCfg = [0,0,0,0,0,0,0,0]
+
+        payloadCfg[0] = 0
+        payloadCfg[1] = layer
+
+
+        payloadCfg[4] = (key_id >> 8 * 0) & 255;
+        payloadCfg[5] = (key_id >> 8 * 1) & 255;
+        payloadCfg[6] = (key_id >> 8 * 2) & 255;
+        payloadCfg[7] = (key_id >> 8 * 3) & 255;
+
+
+        return self.request_standard_packet('CFG', 'VALGET', payloadCfg, wait_time = wait_time)
 
 
     def geo_coords(self, wait_time = 2500):
@@ -340,23 +383,23 @@ class UbloxGps(object):
     def esf_status(self, wait_time = 2500):
         return self.request_standard_packet('ESF', 'STATUS', wait_time = wait_time)
 
-    def port_settings(self, wait_time = 2500): #doesn't work, seems like class/message configuration was bad (older receiver version?)
-        return self.request_standard_packet('MON', 'COMMS', wait_time = wait_time)#ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+    def port_settings(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'COMMS', wait_time = wait_time)
 
     def module_gnss_support(self, wait_time = 2500):
         return self.request_standard_packet('MON', 'GNSS', wait_time = wait_time)
 
-    def pin_settings(self, wait_time = 2500):#doesn't work on F9P
-        return self.request_standard_packet('MON', 'HW3', wait_time = wait_time) #ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+    def pin_settings(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'HW3', wait_time = wait_time)
 
-    def installed_patches(self, wait_time = 2500):#doesn't work on F9P
-        return self.request_standard_packet('MON', 'PATCH', wait_time = wait_time) #ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+    def installed_patches(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'PATCH', wait_time = wait_time) #changed from HW3 to PATCH
 
     def prod_test_pio(self, wait_time = 2500):
         return self.request_standard_packet('MON', 'PIO', wait_time = wait_time)
 
-    def prod_test_monitor(self, wait_time = 2500):#doesn't work on F9P
-        return self.request_standard_packet('MON', 'PT2', wait_time = wait_time)#ValueError: The payload length does not match the length implied by the message fields. Expected x actual y
+    def prod_test_monitor(self, wait_time = 2500):
+        return self.request_standard_packet('MON', 'PT2', wait_time = wait_time)
 
     def rf_ant_status(self, wait_time = 2500):
         return self.request_standard_packet('MON', 'RF', wait_time = wait_time)

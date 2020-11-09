@@ -77,20 +77,24 @@ class Field:
     def parse(self, it: Iterator) -> tuple:
         """Return a tuple representing the provided value/s"""
         resp = []
-        value = next(it)
+        len = 1 if self._type == 'S' else self._len
+
+        for i in range(0, len):
+            resp.append(next(it))
 
         if self._type in ['U1', 'I1', 'U2', 'I2', 'U4', 'I4', ]:
-            resp = int(value)
+            for i in range(0, len):
+                resp[i] = int(resp[i])
         elif self._type == 'R4':
-            resp = float(value)
+            for i in range(0, len):
+                resp[i] = float(resp[i])
         elif self._type == 'R8':
-            resp = double(value)
+            for i in range(0, len):
+                resp[i] = double(resp[i])
         elif self._type == 'S':
-            resp = value.decode('ascii').rstrip('\0')
-        else:
-            resp = value
+            resp = [resp[0].decode('ascii').rstrip('\0')]
 
-        return self.name, resp
+        return self.name, resp[0] if len == 1 else resp
 
 
 class Flag:
