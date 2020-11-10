@@ -19,6 +19,10 @@ ACK_CLS = core.Cls(0x05, 'ACK', [
 CFG_CLS = core.Cls(0x06, 'CFG', [
     core.Message(0x41, 'OTP', [
     ]),
+    core.Message(0x1, 'MSG', [
+        core.Field('msgClass', 'U1'),
+        core.Field('msgID', 'U1'),
+    ]),
     core.Message(0x2C, 'PIO', [
         core.Field('version', 'U1'),
         core.Field('request', 'U1'),

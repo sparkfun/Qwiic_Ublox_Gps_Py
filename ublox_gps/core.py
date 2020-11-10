@@ -395,7 +395,7 @@ class Parser:
         self.classes[cls.id_] = cls
 
 
-    def receive_from(self, stream, skippreamble = False) -> namedtuple:
+    def receive_from(self, stream, skippreamble = False, ignoreunsupported = False) -> namedtuple:
         """Receive a message from a stream and return as a namedtuple.
         raise IOError or ValueError on errors.
         """
@@ -417,11 +417,16 @@ class Parser:
 
         # check the packet validity
         if msg_cls not in self.classes:
-            raise ValueError("Received unsupported message class of {:x}".format(msg_cls))
+            if ignoreunsupported:
+                return (None, None, None)
+            else:
+                raise ValueError("Received message id of {:x} in unsupported class {:x}".format(msg_id, msg_cls))
 
         if msg_id not in self.classes[msg_cls]:
-            raise ValueError("Received unsupported message id of {:x} in class {:x}".format(
-                msg_id, msg_cls))
+            if ignoreunsupported:
+                return (None, None, None)
+            else:
+                raise ValueError("Received unsupported message id of {:x} in class {:x}".format(msg_id, msg_cls))
 
         # Read the payload
         buff += stream.read(length)

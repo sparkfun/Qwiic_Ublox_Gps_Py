@@ -77,6 +77,7 @@ class UbloxGps(object):
     :rtype:             Object
     """
     MAX_NMEA_LINES = 50
+    MAX_ERRORS = 5
 
 
 
@@ -91,6 +92,7 @@ class UbloxGps(object):
 
         self.nmea_line_buffer = collections.deque(maxlen=UbloxGps.MAX_NMEA_LINES)
 
+        self.worker_exception_buffer = collections.deque(maxlen=UbloxGps.MAX_ERRORS)
         self.pckt_scl = {
             'lon' : (10**-7),
             'lat' :  (10**-7),
@@ -105,9 +107,9 @@ class UbloxGps(object):
             'nDOP' : 0.01,
             'eDOP' : 0.01,
 
-            'headVeh ' :  (10**-5),
-            'magDec ' :  (10**-2),
-            'magAcc ' :  (10**-2),
+            'headVeh ' : (10**-5),
+            'magDec ' : (10**-2),
+            'magAcc ' : (10**-2),
 
             'lonHp' : (10**-9),
             'latHp' : (10**-9),
@@ -198,16 +200,25 @@ class UbloxGps(object):
 
         while True:
             try:
+                if (self.stopping):
+                    break
+
                 c2 = c2 + self.hard_port.read(1)
                 c2 = c2[-len(core.Parser.PREFIX):] # keep just 2 bytes, dump the rest
 
                 if (c2[-1:] == b'$'):
-                    self.nmea_line_buffer.append('$' + core.Parser._read_until(self.hard_port, b'\x0d\x0a').decode('ascii').rstrip(' \r\n'))
+                    nmea_data = core.Parser._read_until(self.hard_port, b'\x0d\x0a')
+                    try:
+                        self.nmea_line_buffer.append('$' + nmea_data.decode('utf-8').rstrip(' \r\n'))
+                    except:
+                        pass #we just ignore bad messages, we don't ignore communication issues though
+                        
                     c2 = b''
                 elif (c2 == core.Parser.PREFIX):
-                    cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port, True)
+                    cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port, True, True)
 
                     if not(cls_name is None or msg_name is None or payload is None):
+                        #print(cls_name, msg_name)
                         self.set_packet(cls_name, msg_name, payload)
 
                 if (self.stopping):
@@ -215,13 +226,8 @@ class UbloxGps(object):
 
                 time.sleep(0.01)
 
-                self.last_thread_error = None
             except: # catch *all* exceptions
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-
-                traceback.print_exception(exc_type, exc_value, exc_traceback,limit=2, file=sys.stdout)
-
-                self.last_thread_error = exc_value
+                self.worker_exception_buffer.append(sys.exc_info())
 
                 if (self.stopping):
                     break
@@ -285,7 +291,7 @@ class UbloxGps(object):
 
         return True
 
-    def request_standard_packet(self, cls_name, msg_name, ubx_payload = None, wait_time = 2500):
+    def request_standard_packet(self, cls_name, msg_name, ubx_payload = None, wait_time = 2500, rethrow_thread_exception = True):
         """
         Sends a poll request for the ubx_class_id class with the ubx_id Message ID and
         parses ublox messages for the response. The payload is extracted from
@@ -303,15 +309,22 @@ class UbloxGps(object):
 
         orig_packet = self.wait_packet(cls_name, msg_name, wait_time);
 
+        if len(self.worker_exception_buffer) > 0:
+            err = self.worker_exception_buffer.popleft()
+            raise err[1].with_traceback(err[2])
+
+
         return self.scale_packet(orig_packet) if not(orig_packet is None) else None
 
     def scale_packet(self, packet):
-        dict_packet= packet._asdict();
+        dict_packet = packet._asdict()
+        isdirty = False
         for (k,v) in dict_packet.items():
             if k in self.pckt_scl:
+                isdirty = True
                 dict_packet[k] = self.pckt_scl[k] * v
 
-        return type(packet)(**dict_packet)
+        return type(packet)(**dict_packet) if isdirty else packet #we only need to reallocate and rebuild packet if it was changed
 
 
     def stream_nmea(self, wait_for_nmea = True):
@@ -320,7 +333,7 @@ class UbloxGps(object):
 
         return self.nmea_line_buffer.popleft() if len(self.nmea_line_buffer) > 0 else None
 
-    def ubx_get_val(self, key_id, layer = 7, wait_time = 2500):
+    def ubx_get_val(self, key_id, layer = 0, wait_time = 2500):
         """
         This function takes the given key id and breakes it into individual bytes
         which are then cocantenated together. This payload is then sent along
@@ -335,20 +348,67 @@ class UbloxGps(object):
         if layer != 7:
             layer = 0
 
-        payloadCfg = [0,0,0,0,0,0,0,0]
+        payloadCfg = [0,layer,0,0,
+            (key_id) & 255,
+            (key_id >> 8) & 255,
+            (key_id >> 16) & 255,
+            (key_id >> 24) & 255
+        ]
 
-        payloadCfg[0] = 0
-        payloadCfg[1] = layer
+        return self.request_standard_packet('CFG', 'VALGET', bytes(payloadCfg), wait_time = wait_time) #we return result immediately, hope get_val request won't overlap
+
+    def ubx_set_val(self, key_id, ubx_payload, layer = 7, wait_time = 2500):
+        """
+        This function takes the given key id and breakes it into individual bytes
+        which are then cocantenated together. This payload is then sent along
+        with the CFG Class and VALSET Message ID to send_message(). Ublox
+        Messages are then parsed for the requested values or a NAK signifying a
+        problem.
+        :return: None
+        :rtype: namedtuple
+        """
 
 
-        payloadCfg[4] = (key_id >> 8 * 0) & 255;
-        payloadCfg[5] = (key_id >> 8 * 1) & 255;
-        payloadCfg[6] = (key_id >> 8 * 2) & 255;
-        payloadCfg[7] = (key_id >> 8 * 3) & 255;
+        if ubx_payload is None:
+            return
+        elif isinstance(ubx_payload, list):
+            ubx_payload = bytes(ubx_payload)
+        elif not(isinstance(ubx_payload, bytes)):
+            ubx_payload = bytes([ubx_payload])
+
+        if len(ubx_payload) == 0:
+            return
 
 
-        return self.request_standard_packet('CFG', 'VALGET', payloadCfg, wait_time = wait_time)
+        payloadCfg = [0,layer,0,0,
+            (key_id) & 255,
+            (key_id >> 8) & 255,
+            (key_id >> 16) & 255,
+            (key_id >> 24) & 255
+        ]
 
+        self.request_standard_packet('CFG', 'VALSET', bytes(payloadCfg) + ubx_payload, wait_time = wait_time)
+
+    def set_auto_msg(self, cls_name, msg_name, freq, wait_time = 2500):
+        ubx_class_id = self.cls_ms[cls_name][0] #convert names to ids
+        ubx_id = self.cls_ms[cls_name][1][msg_name]
+
+        if freq is None:
+            freq = 0
+        elif isinstance(freq, bool):
+            freq = 1 if freq else 0
+        elif freq < 0:
+            freq = 0
+
+        if msg_name in self.cls_ms_auto[cls_name]:
+            self.cls_ms_auto[cls_name].remove(msg_name)
+
+        if freq > 0:
+            self.cls_ms_auto[cls_name].append(msg_name)
+
+        payloadCfg = [ubx_class_id, ubx_id, freq]
+
+        self.request_standard_packet('CFG', 'MSG', payloadCfg, wait_time = wait_time)
 
     def geo_coords(self, wait_time = 2500):
         return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
