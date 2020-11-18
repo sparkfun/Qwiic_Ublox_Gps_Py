@@ -10,7 +10,7 @@
 #   https://www.sparkfun.com/products/15210
 # SparkFun GPS-RTK Dead Reckoning Phat ZED-F9R:
 #   https://www.sparkfun.com/products/16475
-# SparkFun GPS-RTK Dead Reckoning ZED-F9R:
+# SparkFun GPS-RTK Dead Reckoning ZED-F9R:  
 #   https://www.sparkfun.com/products/16344
 # SparkFun GPS Dead Reckoning NEO-M9N:
 #   https://www.sparkfun.com/products/15712
@@ -20,29 +20,25 @@
 #
 # Do you like this library? Help suphard_port SparkFun. Buy a board!
 #==================================================================================
+# GNU GPL License 3.0
 # Copyright (c) 2020 SparkFun Electronics
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ==================================================================================
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial hard_portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#==================================================================================
-#
-# This is mostly a hard_port of existing Arduino functionaly, so pylint is sad.
-# The goal is to keep the public interface pthonic, but internal is internal
+# The following code is a dependent on work by daymople and the awesome parsing
+# capabilities of ubxtranslator: https://github.com/dalymople/ubxtranslator.
 #
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #

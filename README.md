@@ -153,12 +153,17 @@ if __name__ == '__main__':
 	* Simple example showing how to use SPI. 
 		Module. 
 
+### Attribution
+---
+This code is dependent on the work by [daylomople](https://github.com/dalymople) and the awesome parsing capabilities of [ubxtranslator](https://github.com/dalymople/ubxtranslator). 
+
 ### To Do
 ---
 * [ ] Some bugs associated with SPI writes.
 * [ ] Add more Classes and Messages to `sparkfun_predefines.py` so that a
 	greater variety of messages can be parsed. 
 * [ ] Fix bug when getting configuration settings. 
-	
+
+
 
 
