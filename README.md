@@ -12,8 +12,6 @@ Qwiic_Ublox_Gps_Py
 		<img src="https://img.shields.io/github/issues/sparkfun/Qwiic_Ublox_Gps_Py.svg" /></a>
 	<a href="https://qwiic-ublox-gps-py.readthedocs.io/en/latest/index.html" alt="Documentation">
 		<img src="https://readthedocs.org/projects/qwiic-ublox-gps-py/badge/?version=latest&style=flat" /></a>
-	<a href="https://github.com/sparkfun/Qwiic_PCA9685_Py/blob/master/LICENSE" alt="License">
-		<img src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
 	<a href="https://twitter.com/intent/follow?screen_name=sparkfun">
         	<img src="https://img.shields.io/twitter/follow/sparkfun.svg?style=social&logo=twitter"
            	 alt="follow on Twitter"></a>
