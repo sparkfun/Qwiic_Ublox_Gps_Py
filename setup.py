@@ -63,8 +63,7 @@ setup(
     author='SparkFun Electronics',
     author_email='info@sparkfun.com',
 
-    install_requires=[
-    ],
+    install_requires=["pyserial", ],
 
     # Choose your license
     license='MIT',

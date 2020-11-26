@@ -113,6 +113,9 @@ class UbloxGps(object):
         self.time_ms= {
             'TM2':0x03, 'TP':0x01, 'VRFY':0x06
         }
+        self.rxm_ms= {
+            "RAWX":0x15,
+        }
 
     def send_message(self, ubx_class, ubx_id, ubx_payload = None):
         """
@@ -511,6 +514,23 @@ class UbloxGps(object):
         msg = parse_tool.receive_from(self.hard_port)
         return msg
 
+    def get_ubx_rxm_rawx(self):
+        """
+        Sends a poll request for the RXM class that contains the raw
+        pseudorange, carrier phase, and doppler information for each
+        satellite, among other information. This payload is extracted from the
+        response, scaled, and then passed to the user.
+
+        :return: The payload of the RXM Class and RAWX measurements
+        :rtype: namedtuples
+        """
+        self.send_message(sp.RXM_CLS, self.rxm_ms.get("RAWX"))
+        parse_tool = core.Parser([sp.RXM_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_RXM_RAWX(payload)
+        return s_payload
+
+
     def scale_NAV_ATT(self, nav_payload):
         """
         This takes the UBX-NAV-ATT payload and scales the relevant fields
@@ -715,7 +735,30 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(heading= att_head * (10**-5))
 
         return nav_payload
+    
+    def scale_RXM_RAWX(self, nav_payload):
+        """
+        This takes the UBX-RXM-RAWX payload and scales the relevant fields as
+        they're described in the datasheet.
 
+        :return: Scaled version of the given payload.
+        :rtype: namedtyple
+        """
+        for _i, _rb in enumerate(nav_payload.RB):
+            _pr_std = _rb.prStdev
+            _pr_std = _pr_std._replace(prStd=_pr_std.prStd * 0.01 * (2 ** 4))
+
+            _cp_std = _rb.cpStdev
+            _cp_std = _cp_std._replace(cpStd=_cp_std.cpStd * 0.004)
+
+            _do_std = _rb.doStdev
+            _do_std = _do_std._replace(doStd=_do_std.doStd * 0.002 * (2 ** 4))
+
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(prStdev=_pr_std)
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(cpStdev=_cp_std)
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(doStdev=_do_std)
+
+        return nav_payload
 
 
 
