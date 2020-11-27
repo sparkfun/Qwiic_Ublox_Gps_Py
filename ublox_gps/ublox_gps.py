@@ -45,11 +45,23 @@
 
 import struct
 import serial
-import spidev
 
 from . import sparkfun_predefines as sp
 from . import core
 
+try:
+    import spidev
+    SPI_AVAILABLE = True
+except ModuleNotFoundError as err:
+    import sys
+
+    # If the platform is MacOS or Windows
+    if sys.platform in ["darwin", "win32", ]:
+        print("spidev not available for windows")
+        SPI_AVAILABLE = False
+    else:
+        raise err
+    
 class UbloxGps(object):
     """
     UbloxGps
@@ -58,7 +70,7 @@ class UbloxGps(object):
 
     :param hard_port:   The port to use to communicate with the module, this
                         can be a serial or SPI port. If no port is given, then the library
-                        assumes serial at a 38400 baud rate.
+                        assumes serial0 at a 38400 baud rate.
 
     :return:            The UbloxGps object.
     :rtype:             Object
@@ -67,11 +79,16 @@ class UbloxGps(object):
     def __init__(self, hard_port = None):
         if hard_port is None:
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
-        elif type(hard_port) == spidev.SpiDev:
-            sfeSpi = sfeSpiWrapper(hard_port)
-            self.hard_port = sfeSpi
-        else:
+        elif isinstance(hard_port, serial.Serial):
             self.hard_port = hard_port
+
+        if SPI_AVAILABLE:
+            if type(hard_port) == spidev.SpiDev:
+                sfeSpi = sfeSpiWrapper(hard_port)
+                self.hard_port = sfeSpi
+        
+        if not hasattr(self, "hard_port"):
+            raise IOError("Unable to connect to port: {}".format(hard_port))
 
         # Class message values
         self.ack_ms= {
@@ -761,57 +778,57 @@ class UbloxGps(object):
         return nav_payload
 
 
-
-class sfeSpiWrapper(object):
-    """
-    sfeSpiWrapper
-
-    Initialize the library with the given port.
-
-    :param spi_port:    This library simply provides some ducktyping for spi so
-                        that the ubxtranslator library doesn't complain. It
-                        takes a spi port and then sets it to the ublox module's
-                        specifications.
-
-    :return:            The sfeSpiWrapper object.
-    :rtype:             Object
-    """
-
-    def __init__(self, spi_port = None):
-
-        if spi_port is None:
-            self.spi_port = spidev.SpiDev()
-        else:
-            self.spi_port = spi_port
-
-        self.spi_port.open(0,0)
-        self.spi_port.max_speed_hz = 5500 #Hz
-        self.spi_port.mode = 0b00
-
-    def read(self, read_data = 1):
+if SPI_AVAILABLE:
+    class sfeSpiWrapper(object):
         """
-        Reads a byte or bytes of data from the SPI port. The bytes are
-        converted to a bytes object before being returned.
+        sfeSpiWrapper
 
-        :return: The requested bytes
-        :rtype: bytes
+        Initialize the library with the given port.
+
+        :param spi_port:    This library simply provides some ducktyping for spi so
+                            that the ubxtranslator library doesn't complain. It
+                            takes a spi port and then sets it to the ublox module's
+                            specifications.
+
+        :return:            The sfeSpiWrapper object.
+        :rtype:             Object
         """
 
-        data = self.spi_port.readbytes(read_data)
-        byte_data = bytes([])
-        for d in data:
-            byte_data = byte_data + bytes([d])
-        return byte_data
+        def __init__(self, spi_port = None):
 
-    def write(self, data):
-        """
-        Writes a byte or bytes of data to the SPI port.
+            if spi_port is None:
+                self.spi_port = spidev.SpiDev()
+            else:
+                self.spi_port = spi_port
 
-        :return: True on completion
-        :rtype: boolean
-        """
-        self.spi_port.xfer2(list(data))
+            self.spi_port.open(0,0)
+            self.spi_port.max_speed_hz = 5500 #Hz
+            self.spi_port.mode = 0b00
 
-        return True
+        def read(self, read_data = 1):
+            """
+            Reads a byte or bytes of data from the SPI port. The bytes are
+            converted to a bytes object before being returned.
+
+            :return: The requested bytes
+            :rtype: bytes
+            """
+
+            data = self.spi_port.readbytes(read_data)
+            byte_data = bytes([])
+            for d in data:
+                byte_data = byte_data + bytes([d])
+            return byte_data
+
+        def write(self, data):
+            """
+            Writes a byte or bytes of data to the SPI port.
+
+            :return: True on completion
+            :rtype: boolean
+            """
+            self.spi_port.xfer2(list(data))
+
+            return True
 
 

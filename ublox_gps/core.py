@@ -4,7 +4,7 @@
 import struct
 import time
 from collections import namedtuple
-from serial import SerialExceptions
+from serial import SerialException
 from typing import List, Iterator, Union
 
 from serial.serialutil import SerialException
