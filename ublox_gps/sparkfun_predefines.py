@@ -3,7 +3,7 @@
 from . import core
 
 __all__ = ['ACK_CLS', 'CFG_CLS', 'ESF_CLS', 'INF_CLS', 'MGA_CLS', 'MON_CLS',
-           'NAV_CLS', 'TIM_CLS', ]
+           'NAV_CLS', 'TIM_CLS', 'RXM_CLS', ]
 
 ACK_CLS = core.Cls(0x05, 'ACK', [
     core.Message(0x01, 'ACK', [
@@ -1127,6 +1127,51 @@ TIM_CLS = core.Cls(0x0D, 'TIM', [
         core.Field('wno', 'U2'),
         core.BitField('flags', 'X1', [
             core.Flag('src', 0, 3)
+        ]),
+    ]),
+])
+
+# From the u-blox M8 protocol spec
+# https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29.pdf
+RXM_CLS = core.Cls(0x02, "RXM", [  # 32.18 UBX-RXM (0x02)
+    core.Message(0x15, "RAWX", [  # 32.18.4 UBX-RXM-RAWX (0x02 0x15)
+        core.Field("rcvTow", "R8"),
+        core.Field("week", "U2"),
+        core.Field("leapS", "I1"),
+        core.Field("numMeas", "U1"),
+        core.BitField("recStat", "X1", [
+            core.Flag("leapSec", 0, 1),
+            core.Flag("clkReset", 1, 2),
+        ]),
+        core.Field("version", "U1"),
+        core.Field("reserved1a", "U1"),  # Try U2?
+        core.Field("reserved1b", "U1"),
+        core.RepeatedBlock("RB", [
+            core.Field("prMeas", "R8"),
+            core.Field("cpMeas", "R8"),
+            core.Field("doMeas", "R4"),
+            core.Field("gnssId", "U1"),
+            core.Field("svId", "U1"),
+            core.Field("sigId", "U1"),
+            core.Field("freqId", "U1"),
+            core.Field("locktime", "U2"),
+            core.Field("cno", "U1"),
+            core.BitField("prStdev", "X1", [
+                core.Flag("prStd", 0, 4),
+            ]),
+            core.BitField("cpStdev", "X1", [
+                core.Flag("cpStd", 0, 4),
+            ]),
+            core.BitField("doStdev", "X1", [
+                core.Flag("doStd", 0, 4),
+            ]),
+            core.BitField("trkStat", "X1", [
+                core.Flag("prValid", 0, 1),
+                core.Flag("coValid", 1, 2),
+                core.Flag("halfCyc", 2, 3),
+                core.Flag("subHalfCyc", 3, 4),
+            ]),
+            core.Field("reserved2", "U1"),
         ]),
     ]),
 ])

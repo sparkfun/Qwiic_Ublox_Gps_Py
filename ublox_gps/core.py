@@ -2,8 +2,12 @@
 """The core structure definitions"""
 
 import struct
+import time
 from collections import namedtuple
+from serial import SerialException
 from typing import List, Iterator, Union
+
+from serial.serialutil import SerialException
 
 __all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'RepeatedBlock', 'Message', 'Cls', 'Parser', ]
 
@@ -435,6 +439,15 @@ class Parser:
         """
         term_len = len(terminator)
         line = bytearray()
+
+        def check_timeout(start_time) -> bool:
+            """Check to see if the timeout has been reached."""
+            if not hasattr(stream, "timeout"):
+                return False
+            
+            return (time.time() - start_time) > stream.timeout
+
+        _read_start_time = time.time()
         while True:
             c = stream.read(1)
             if c:
@@ -443,6 +456,10 @@ class Parser:
                     break
                 if size is not None and len(line) >= size:
                     break
+            elif check_timeout(_read_start_time):
+                raise SerialException(
+                    "Failed to find terminator before timeout."
+                )
             else:
                 break
 

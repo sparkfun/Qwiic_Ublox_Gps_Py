@@ -45,11 +45,23 @@
 
 import struct
 import serial
-import spidev
 
 from . import sparkfun_predefines as sp
 from . import core
 
+try:
+    import spidev
+    SPI_AVAILABLE = True
+except ModuleNotFoundError as err:
+    import sys
+
+    # If the platform is MacOS or Windows
+    if sys.platform in ["darwin", "win32", ]:
+        print("spidev only available for linux")
+        SPI_AVAILABLE = False
+    else:
+        raise err
+    
 class UbloxGps(object):
     """
     UbloxGps
@@ -58,7 +70,7 @@ class UbloxGps(object):
 
     :param hard_port:   The port to use to communicate with the module, this
                         can be a serial or SPI port. If no port is given, then the library
-                        assumes serial at a 38400 baud rate.
+                        assumes serial0 at a 38400 baud rate.
 
     :return:            The UbloxGps object.
     :rtype:             Object
@@ -67,11 +79,16 @@ class UbloxGps(object):
     def __init__(self, hard_port = None):
         if hard_port is None:
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
-        elif type(hard_port) == spidev.SpiDev:
-            sfeSpi = sfeSpiWrapper(hard_port)
-            self.hard_port = sfeSpi
-        else:
+        elif isinstance(hard_port, serial.Serial):
             self.hard_port = hard_port
+
+        if SPI_AVAILABLE:
+            if type(hard_port) == spidev.SpiDev:
+                sfeSpi = sfeSpiWrapper(hard_port)
+                self.hard_port = sfeSpi
+        
+        if not hasattr(self, "hard_port"):
+            raise IOError("Unable to connect to port: {}".format(hard_port))
 
         # Class message values
         self.ack_ms= {
@@ -112,6 +129,9 @@ class UbloxGps(object):
         }
         self.time_ms= {
             'TM2':0x03, 'TP':0x01, 'VRFY':0x06
+        }
+        self.rxm_ms= {
+            "RAWX":0x15,
         }
 
     def send_message(self, ubx_class, ubx_id, ubx_payload = None):
@@ -356,6 +376,21 @@ class UbloxGps(object):
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return payload
 
+    def rawx_measurements(self):
+        """
+        Sends a poll request for the RXM class with the RAWX measurements and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
+
+        :return: The payload of the RXM Class and RAWX Message ID
+        :rtype: namedtuple
+        """
+        self.send_message(sp.RXM_CLS, self.rxm_ms.get('RAWX'))
+        parse_tool = core.Parser([sp.RXM_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_RXM_RAWX(payload)
+        return s_payload
+
     def port_settings(self):
         """
         Sends a poll request for the MON class with the COMMS Message ID and
@@ -510,6 +545,23 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.MON_CLS])
         msg = parse_tool.receive_from(self.hard_port)
         return msg
+
+    def get_ubx_rxm_rawx(self):
+        """
+        Sends a poll request for the RXM class that contains the raw
+        pseudorange, carrier phase, and doppler information for each
+        satellite, among other information. This payload is extracted from the
+        response, scaled, and then passed to the user.
+
+        :return: The payload of the RXM Class and RAWX measurements
+        :rtype: namedtuples
+        """
+        self.send_message(sp.RXM_CLS, self.rxm_ms.get("RAWX"))
+        parse_tool = core.Parser([sp.RXM_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_RXM_RAWX(payload)
+        return s_payload
+
 
     def scale_NAV_ATT(self, nav_payload):
         """
@@ -715,60 +767,83 @@ class UbloxGps(object):
         nav_payload = nav_payload._replace(heading= att_head * (10**-5))
 
         return nav_payload
-
-
-
-
-class sfeSpiWrapper(object):
-    """
-    sfeSpiWrapper
-
-    Initialize the library with the given port.
-
-    :param spi_port:    This library simply provides some ducktyping for spi so
-                        that the ubxtranslator library doesn't complain. It
-                        takes a spi port and then sets it to the ublox module's
-                        specifications.
-
-    :return:            The sfeSpiWrapper object.
-    :rtype:             Object
-    """
-
-    def __init__(self, spi_port = None):
-
-        if spi_port is None:
-            self.spi_port = spidev.SpiDev()
-        else:
-            self.spi_port = spi_port
-
-        self.spi_port.open(0,0)
-        self.spi_port.max_speed_hz = 5500 #Hz
-        self.spi_port.mode = 0b00
-
-    def read(self, read_data = 1):
+    
+    def scale_RXM_RAWX(self, nav_payload):
         """
-        Reads a byte or bytes of data from the SPI port. The bytes are
-        converted to a bytes object before being returned.
+        This takes the UBX-RXM-RAWX payload and scales the relevant fields as
+        they're described in the datasheet.
 
-        :return: The requested bytes
-        :rtype: bytes
+        :return: Scaled version of the given payload.
+        :rtype: namedtyple
+        """
+        for _i, _rb in enumerate(nav_payload.RB):
+            _pr_std = _rb.prStdev
+            _pr_std = _pr_std._replace(prStd=_pr_std.prStd * 0.01 * (2 ** 4))
+
+            _cp_std = _rb.cpStdev
+            _cp_std = _cp_std._replace(cpStd=_cp_std.cpStd * 0.004)
+
+            _do_std = _rb.doStdev
+            _do_std = _do_std._replace(doStd=_do_std.doStd * 0.002 * (2 ** 4))
+
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(prStdev=_pr_std)
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(cpStdev=_cp_std)
+            nav_payload.RB[_i] = nav_payload.RB[_i]._replace(doStdev=_do_std)
+
+        return nav_payload
+
+
+if SPI_AVAILABLE:
+    class sfeSpiWrapper(object):
+        """
+        sfeSpiWrapper
+
+        Initialize the library with the given port.
+
+        :param spi_port:    This library simply provides some ducktyping for spi so
+                            that the ubxtranslator library doesn't complain. It
+                            takes a spi port and then sets it to the ublox module's
+                            specifications.
+
+        :return:            The sfeSpiWrapper object.
+        :rtype:             Object
         """
 
-        data = self.spi_port.readbytes(read_data)
-        byte_data = bytes([])
-        for d in data:
-            byte_data = byte_data + bytes([d])
-        return byte_data
+        def __init__(self, spi_port = None):
 
-    def write(self, data):
-        """
-        Writes a byte or bytes of data to the SPI port.
+            if spi_port is None:
+                self.spi_port = spidev.SpiDev()
+            else:
+                self.spi_port = spi_port
 
-        :return: True on completion
-        :rtype: boolean
-        """
-        self.spi_port.xfer2(list(data))
+            self.spi_port.open(0,0)
+            self.spi_port.max_speed_hz = 5500 #Hz
+            self.spi_port.mode = 0b00
 
-        return True
+        def read(self, read_data = 1):
+            """
+            Reads a byte or bytes of data from the SPI port. The bytes are
+            converted to a bytes object before being returned.
+
+            :return: The requested bytes
+            :rtype: bytes
+            """
+
+            data = self.spi_port.readbytes(read_data)
+            byte_data = bytes([])
+            for d in data:
+                byte_data = byte_data + bytes([d])
+            return byte_data
+
+        def write(self, data):
+            """
+            Writes a byte or bytes of data to the SPI port.
+
+            :return: True on completion
+            :rtype: boolean
+            """
+            self.spi_port.xfer2(list(data))
+
+            return True
 
 
