@@ -57,7 +57,7 @@ except ModuleNotFoundError as err:
 
     # If the platform is MacOS or Windows
     if sys.platform in ["darwin", "win32", ]:
-        print("spidev not available for windows")
+        print("spidev only available for linux")
         SPI_AVAILABLE = False
     else:
         raise err
@@ -375,6 +375,21 @@ class UbloxGps(object):
         parse_tool = core.Parser([sp.ESF_CLS])
         cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
         return payload
+
+    def rawx_measurements(self):
+        """
+        Sends a poll request for the RXM class with the RAWX measurements and
+        parses ublox messages for the response. The payload is extracted from
+        the response which is then passed to the user.
+
+        :return: The payload of the RXM Class and RAWX Message ID
+        :rtype: namedtuple
+        """
+        self.send_message(sp.RXM_CLS, self.rxm_ms.get('RAWX'))
+        parse_tool = core.Parser([sp.RXM_CLS])
+        cls_name, msg_name, payload = parse_tool.receive_from(self.hard_port)
+        s_payload = self.scale_RXM_RAWX(payload)
+        return s_payload
 
     def port_settings(self):
         """
