@@ -67,6 +67,9 @@ class UbloxGps(object):
     :rtype:             Object
     """
 
+    device_name = _DEFAULT_NAME
+    available_addresses = _AVAILABLE_I2C_ADDRESS
+
     def __init__(self, hard_port = None):
         if hard_port is None:
             self.hard_port = serial.Serial("/dev/serial0/", 38400, timeout=1)
