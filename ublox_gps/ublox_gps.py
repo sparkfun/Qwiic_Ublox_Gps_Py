@@ -96,8 +96,8 @@ class UbloxGps(object):
         self.pckt_scl = {
             'lon' : (10**-7),
             'lat' :  (10**-7),
-            'headMot ' :  (10**-5),
-            'headAcc ' :  (10**-5),
+            'headMot' :  (10**-5),
+            'headAcc' :  (10**-5),
 
             'pDOP' :  0.01,
             'gDOP' : 0.01,
@@ -107,9 +107,9 @@ class UbloxGps(object):
             'nDOP' : 0.01,
             'eDOP' : 0.01,
 
-            'headVeh ' : (10**-5),
-            'magDec ' : (10**-2),
-            'magAcc ' : (10**-2),
+            'headVeh' : (10**-5),
+            'magDec' : (10**-2),
+            'magAcc' : (10**-2),
 
             'lonHp' : (10**-9),
             'latHp' : (10**-9),
@@ -212,7 +212,7 @@ class UbloxGps(object):
                         self.nmea_line_buffer.append('$' + nmea_data.decode('utf-8').rstrip(' \r\n'))
                     except:
                         pass #we just ignore bad messages, we don't ignore communication issues though
-                        
+
                     c2 = b''
                 elif (c2 == core.Parser.PREFIX):
                     cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port, True, True)
