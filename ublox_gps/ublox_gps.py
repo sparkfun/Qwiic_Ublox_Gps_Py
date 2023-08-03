@@ -415,6 +415,9 @@ class UbloxGps(object):
     def geo_coords(self, wait_time = 2500):
         return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
+    def geo_cov(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'COV', wait_time = wait_time)
+
     def hp_geo_coords(self, wait_time = 2500):
         return self.request_standard_packet('NAV', 'HPPOSLLH', wait_time = wait_time)
 
@@ -471,9 +474,6 @@ class UbloxGps(object):
 
     def sensor_production_test(self, wait_time = 2500):#No response on F9P
         return self.request_standard_packet('MON', 'SPT', wait_time = wait_time)
-
-    #def temp_val_state(self, wait_time = 2500):#Doesn't work because TEMP structure is not defined on sparkfun_predefines,
-    #    return self.request_standard_packet('MON', 'TEMP', wait_time = wait_time)#and i honestly don't even see it on official UBLOX doc to fix it
 
     def module_software_version(self, wait_time = 2500):
         return self.request_standard_packet('MON', 'VER', wait_time = wait_time)

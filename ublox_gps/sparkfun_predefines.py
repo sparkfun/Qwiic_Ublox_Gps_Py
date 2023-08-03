@@ -565,27 +565,6 @@ MON_CLS = core.Cls(0x0a, 'MON', [
             #core.Field('rfPga', 'U1'),
             core.PadByte(repeat=0), #? TODO: FIX this ... if i ever find what it is
         ]),
-        #core.RepeatedBlock('RB2', [
-        #    core.Field('gnssId', 'U1'),
-        #    core.Field('svId', 'U1'),
-        #    core.Field('sigId', 'U1'),
-        #    core.Field('accsId', 'U1'),
-        #    core.Field('cnoMin', 'U2'),
-        #    core.Field('cnoMax', 'U2'),
-        #    core.PadByte(repeat=14), #?
-        #    core.Field('carrPhDevMax', 'U1'),
-        #    core.BitField('signalInfo', 'X1', [
-        #        core.Flag('ifChnValid', 0, 1),
-        #        core.Flag('ifChnId', 1, 3),
-        #    ]),
-        #    core.Field('codeLockSuccess', 'U1'),
-        #    core.Field('phaseLockSuccess', 'U1'),
-        #    core.Field('minCodeLockTime', 'U2'),
-        #    core.Field('maxCodeLockTime', 'U2'),
-        #    core.Field('minPhaseLockTime', 'U2'),
-        #    core.Field('maxPhaseLockTime', 'U2'),
-        #    core.PadByte(repeat=2),
-        #]),
     ]),
     core.Message(0x38, 'RF', [
         core.Field('version', 'U1'),
