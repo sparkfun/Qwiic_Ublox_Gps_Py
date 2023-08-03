@@ -49,11 +49,17 @@ class Field:
     __types__ = {'U1': 'B', 'I1': 'b',
                  'U2': 'H', 'I2': 'h',
                  'U4': 'I', 'I4': 'i', 'R4': 'f',
-                 'R8': 'd', 'C': 'c'}
-    __slots__ = ['name', '_type', ]
+                 'R8': 'd', 'C': 'c', 'S': 's'}
+    __slots__ = ['name', '_type', '_len']
 
-    def __init__(self, name: str, type_: str):
+    def __init__(self, name: str, type_: str, len_: int = 1):
         self.name = name
+
+        if (len_ is None or len_ < 0):
+            ValueError('The provided _len is not valid')
+
+
+        self._len = len_
 
         if type_ not in Field.__types__:
             raise ValueError('The provided _type of {} is not valid'.format(type_))
@@ -66,23 +72,30 @@ class Field:
     @property
     def fmt(self):
         """Return the format char for use with the struct package"""
-        return Field.__types__[self._type]
+
+        return (str(self._len) if self._len > 1 else '') + Field.__types__[self._type]
 
     def parse(self, it: Iterator) -> tuple:
         """Return a tuple representing the provided value/s"""
         resp = []
-        value = next(it)
+        len = 1 if self._type == 'S' else self._len
+
+        for i in range(0, len):
+            resp.append(next(it))
 
         if self._type in ['U1', 'I1', 'U2', 'I2', 'U4', 'I4', ]:
-            resp = int(value)
+            for i in range(0, len):
+                resp[i] = int(resp[i])
+        elif self._type == 'R4':
+            for i in range(0, len):
+                resp[i] = float(resp[i])
+        elif self._type == 'R8':
+            for i in range(0, len):
+                resp[i] = double(resp[i])
+        elif self._type == 'S':
+            resp = [resp[0].decode('ascii').rstrip('\0')]
 
-        if self._type in ['R4', 'R8', ]:
-            resp = float(value)
-
-        if self._type == 'C':
-            resp = value
-
-        return self.name, resp
+        return self.name, resp[0] if len == 1 else resp
 
 
 class Flag:
@@ -382,11 +395,12 @@ class Parser:
         """Register a message  class."""
         self.classes[cls.id_] = cls
 
-    def receive_from(self, stream) -> namedtuple:
+
+    def receive_from(self, stream, skippreamble = False, ignoreunsupported = False) -> namedtuple:
         """Receive a message from a stream and return as a namedtuple.
         raise IOError or ValueError on errors.
         """
-        while True:
+        while not(skippreamble):
             # Search for the prefix
             buff = self._read_until(stream, terminator=self.PREFIX)
             if buff[-2:] == self.PREFIX:
@@ -394,6 +408,7 @@ class Parser:
 
         # read the first four bytes
         buff = stream.read(4)
+
 
         if len(buff) != 4:
             raise IOError("A stream read returned {} bytes, expected 4 bytes".format(len(buff)))
@@ -403,11 +418,16 @@ class Parser:
 
         # check the packet validity
         if msg_cls not in self.classes:
-            raise ValueError("Received unsupported message class of {:x}".format(msg_cls))
+            if ignoreunsupported:
+                return (None, None, None)
+            else:
+                raise ValueError("Received message id of {:x} in unsupported class {:x}".format(msg_id, msg_cls))
 
         if msg_id not in self.classes[msg_cls]:
-            raise ValueError("Received unsupported message id of {:x} in class {:x}".format(
-                msg_id, msg_cls))
+            if ignoreunsupported:
+                return (None, None, None)
+            else:
+                raise ValueError("Received unsupported message id of {:x} in class {:x}".format(msg_id, msg_cls))
 
         # Read the payload
         buff += stream.read(length)
