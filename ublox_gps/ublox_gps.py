@@ -415,6 +415,9 @@ class UbloxGps(object):
     def geo_coords(self, wait_time = 2500):
         return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
+    def get_DOP(self, wait_time = 2500):
+        return self.request_standard_packet('NAV', 'DOP', wait_time = wait_time)
+
     def geo_cov(self, wait_time = 2500):
         return self.request_standard_packet('NAV', 'COV', wait_time = wait_time)
 
