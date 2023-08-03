@@ -1097,7 +1097,7 @@ TIM_CLS = core.Cls(0x0D, 'TIM', [
         core.Field('towMS', 'U4'),
         core.Field('towSubMS', 'U4'),
         core.Field('qErr', 'I4'),
-        core.Field('week', 'I4'),
+        core.Field('week', 'U2'),
         core.BitField('flags', 'X1', [
             core.Flag('timeBase', 0, 1),
             core.Flag('utc', 1, 2),
