@@ -852,7 +852,7 @@ NAV_CLS = core.Cls(0x01, 'NAV', [
         core.Field('iTOW', 'U4'),
         core.Field('version', 'U1'),
         core.Field('numSvs', 'U1'),
-        core.PadByte(repeat=1),
+        core.Field('reserved0', 'U1', 2),
         core.RepeatedBlock('RB', [
             core.Field('gnssId', 'U1'),
             core.Field('svId', 'U1'),

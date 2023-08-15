@@ -159,7 +159,7 @@ class UbloxGps(object):
 
         for (k,v) in vars(sp).items():
             if isinstance(v, core.Cls):
-                tmp_all_cls.append(v);
+                tmp_all_cls.append(v)
                 self.packets[v.name] = {}
                 self.cls_ms_auto[v.name] = []
                 self.cls_ms[v.name] = (v.id_, {})
@@ -177,6 +177,9 @@ class UbloxGps(object):
 
 
     def set_packet(self, cls_name, msg_name, payload):
+        """
+        Creates a new packet with the given class and message name. 
+        """
         if (payload is None):
             if msg_name in self.packets[cls_name]:
                 del self.packets[cls_name][msg_name]
@@ -184,12 +187,18 @@ class UbloxGps(object):
             self.packets[cls_name][msg_name] = payload
 
     def wait_packet(self, cls_name, msg_name, wait_time):
+        """
+        Parses messages for the given class and message as long as the given time is not 
+        exceeeded.
+        :return: ublox message
+        :rtype: namedtuple
+        """
         if wait_time < 0 or wait_time is None:
             wait_time = 0
 
         orig_tm = time.monotonic()
 
-        while (not(msg_name in self.packets[cls_name])):
+        while (msg_name not in self.packets[cls_name]):
             time.sleep(0.05)
 
             if ((time.monotonic() - orig_tm) >= wait_time / 1000.0 ):
@@ -220,7 +229,6 @@ class UbloxGps(object):
                     cls_name, msg_name, payload = self.parse_tool.receive_from(self.hard_port, True, True)
 
                     if not(cls_name is None or msg_name is None or payload is None):
-                        #print(cls_name, msg_name)
                         self.set_packet(cls_name, msg_name, payload)
 
                 if (self.stopping):
@@ -309,16 +317,20 @@ class UbloxGps(object):
             self.set_packet(cls_name, msg_name, None)
             self.send_message(cls_name, msg_name, ubx_payload)
 
-        orig_packet = self.wait_packet(cls_name, msg_name, wait_time);
+        orig_packet = self.wait_packet(cls_name, msg_name, wait_time)
 
         if len(self.worker_exception_buffer) > 0:
             err = self.worker_exception_buffer.popleft()
             raise err[1].with_traceback(err[2])
 
-
-        return self.scale_packet(orig_packet) if not(orig_packet is None) else None
+        return self.scale_packet(orig_packet) if (orig_packet is not None) else None
 
     def scale_packet(self, packet):
+        """
+        Scales the given packet to the unit specified in the interface manual.
+        :return: ublox payload
+        :rtype: packet
+        """
         dict_packet = packet._asdict()
         isdirty = False
         for (k,v) in dict_packet.items():
@@ -330,6 +342,12 @@ class UbloxGps(object):
 
 
     def stream_nmea(self, wait_for_nmea = True):
+        """
+        Checks NMEA buffer for new messages and passes them back to the user 
+        when detected. 
+        :return: nmea message
+        :rtype: string
+        """
         while wait_for_nmea and len(self.nmea_line_buffer) == 0:
             time.sleep(0.05)
 
@@ -413,70 +431,231 @@ class UbloxGps(object):
         self.request_standard_packet('CFG', 'MSG', payloadCfg, wait_time = wait_time)
 
     def geo_coords(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the PVT Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
     def get_DOP(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the DOP Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'DOP', wait_time = wait_time)
 
     def geo_cov(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the COV Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'COV', wait_time = wait_time)
 
     def hp_geo_coords(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the HPPOSLLH Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'HPPOSLLH', wait_time = wait_time)
 
     def date_time(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the HPPOSLLH Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'PVT', wait_time = wait_time)
 
     def satellites(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the SAT Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'SAT', wait_time = wait_time)
 
     def veh_attitude(self, wait_time = 2500):
+        """
+-       Sends a poll request for NAV class and the ATT Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('NAV', 'ATT', wait_time = wait_time)
 
     def imu_alignment(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the ALG Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'ALG', wait_time = wait_time)
 
     def vehicle_dynamics(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the INS Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'INS', wait_time = wait_time)
 
     def esf_measures(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the MEAS Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'MEAS', wait_time = wait_time)
 
     def esf_raw_measures(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the RAW Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'RAW', wait_time = wait_time)
 
     def reset_imu_align(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the RESETALG Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'RESETALG', wait_time = wait_time)
 
     def esf_status(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the RESETALG Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('ESF', 'STATUS', wait_time = wait_time)
 
     def port_settings(self, wait_time = 2500):
+        """
+-       Sends a poll request for ESF class and the COMMS Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'COMMS', wait_time = wait_time)
 
     def module_gnss_support(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the GNSS Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'GNSS', wait_time = wait_time)
 
     def pin_settings(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the HW2 Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'HW3', wait_time = wait_time)
 
     def installed_patches(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the PATCH Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'PATCH', wait_time = wait_time) #changed from HW3 to PATCH
 
     def prod_test_pio(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the PIO Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'PIO', wait_time = wait_time)
 
     def prod_test_monitor(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the PT2 Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'PT2', wait_time = wait_time)
 
     def rf_ant_status(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the RF Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'RF', wait_time = wait_time)
 
     def module_wake_state(self, wait_time = 2500): #No response on F9P
+        """
+-       Sends a poll request for MON class and the RXR Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'RXR', wait_time = wait_time)
 
     def sensor_production_test(self, wait_time = 2500):#No response on F9P
+        """
+-       Sends a poll request for MON class and the SPT Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'SPT', wait_time = wait_time)
 
     def module_software_version(self, wait_time = 2500):
+        """
+-       Sends a poll request for MON class and the VER Message 
++       The response is then passed on to the user.
+
+        :return: ublox payload
+        :rtype: namedtuple
+        """
         return self.request_standard_packet('MON', 'VER', wait_time = wait_time)
