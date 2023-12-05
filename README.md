@@ -56,6 +56,7 @@ Supported Platforms
 --------------------
 The u-blox gps Python package currently supports the following platforms:
 * [Raspberry Pi](https://www.sparkfun.com/search/results?term=raspberry+pi)
+
 <!-- Platforms to be tested
 * [NVidia Jetson Nano](https://www.sparkfun.com/products/15297)
 * [Google Coral Development Board](https://www.sparkfun.com/products/15318)
