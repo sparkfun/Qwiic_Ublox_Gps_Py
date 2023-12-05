@@ -15,7 +15,6 @@ Qwiic_Ublox_Gps_Py
 	<a href="https://twitter.com/intent/follow?screen_name=sparkfun">
         	<img src="https://img.shields.io/twitter/follow/sparkfun.svg?style=social&logo=twitter"
            	 alt="follow on Twitter"></a>
-	
 </p>
 
 <table class="table table-hover table-striped table-bordered">
@@ -31,6 +30,7 @@ Qwiic_Ublox_Gps_Py
     <td><a href="https://www.sparkfun.com/products/15193">SparkFun ZOE-M8Q Breakout (GPS-15193)</a></td>
     <td><a href="https://www.sparkfun.com/products/15210">SparkFun SAM-M8Q Breakout (GPS-15210)</a></td>
   </tr>
+  <tr align="center">
    <td><a href="https://www.sparkfun.com/products/16344"><img src="https://cdn.sparkfun.com/assets/parts/1/5/0/5/9/16344-SparkFun_GPS-RTK_Dead_Reckoning_Breakout_-_ZED-F9R__Qwiic_-01a.jpg"></a></td>
    <td><a href="https://www.sparkfun.com/products/16475"><img src="https://cdn.sparkfun.com/assets/parts/1/5/3/3/9/16475-SparkFun_GPS-RTK_Dead_Reckoning_pHAT_for_Raspberry_Pi-01.jpg"></a></td>
    <td><a href="https://www.sparkfun.com/products/15733"><img src="https://cdn.sparkfun.com/assets/parts/1/4/2/9/3/15712-SparkFun_GPS_Breakout_-_NEO-M9N__U.FL__Qwiic_-01.jpg"></a></td>
