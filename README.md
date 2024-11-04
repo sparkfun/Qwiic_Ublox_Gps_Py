@@ -31,13 +31,13 @@ Qwiic_Ublox_Gps_Py
     <td><a href="https://www.sparkfun.com/products/15210">SparkFun SAM-M8Q Breakout (GPS-15210)</a></td>
   </tr>
   <tr align="center">
-   <td><a href="https://www.sparkfun.com/products/16344"><img src="https://cdn.sparkfun.com/assets/parts/1/5/0/5/9/16344-SparkFun_GPS-RTK_Dead_Reckoning_Breakout_-_ZED-F9R__Qwiic_-01a.jpg"></a></td>
-   <td><a href="https://www.sparkfun.com/products/21305"><img src="https://cdn.sparkfun.com//assets/parts/2/1/0/9/6/21305-GPS-RTK-Dead-Reckoning-pHAT-Feature.jpg"></a></td>
+   <td><a href="https://www.sparkfun.com/products/22693"><img src="https://cdn.sparkfun.com/assets/parts/2/2/8/5/2/22693-_GPS_SparkFun_RTK_Dead_Reckoning_Breakout_ZED-F9R-_01.jpg"></a></td>
+   <td><a href="https://www.sparkfun.com/products/21305"><img src="https://cdn.sparkfun.com/assets/parts/2/1/0/9/6/21305-GPS-RTK-Dead-Reckoning-pHAT-Feature.jpg"></a></td>
    <td><a href="https://www.sparkfun.com/products/15733"><img src="https://cdn.sparkfun.com/assets/parts/1/4/2/9/3/15712-SparkFun_GPS_Breakout_-_NEO-M9N__U.FL__Qwiic_-01.jpg"></a></td>
   </tr>
   <tr align="center">
-    <td><a href="https://www.sparkfun.com/products/21305">SparkFun GPS-RTK Dead Reckoning - ZED-F9R (GPS-21305)</a></td>
-    <td><a href="https://www.sparkfun.com/products/16475">SparkFun GPS-RTK Dead Reckoning Phat- ZED-F9R (GPS-16475)</a></td>
+    <td><a href="https://www.sparkfun.com/products/22693">SparkFun GPS-RTK Dead Reckoning - ZED-F9R (GPS-22693)</a></td>
+    <td><a href="https://www.sparkfun.com/products/21305">SparkFun GPS-RTK Dead Reckoning Phat- ZED-F9R (GPS-16475)</a></td>
     <td><a href="https://www.sparkfun.com/products/15733">SparkFun GPS Dead Reckoning - NEO-M9N (GPS-15733)</a></td>
 </table>
 
